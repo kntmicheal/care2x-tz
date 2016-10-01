@@ -109,7 +109,7 @@ class selianreport extends report {
             $rows_total = $count_result->FetchRow();
             ?>
             <tr>
-            <?php echo '<td>' . $data['count'][$i]['ICD_10_code'] . '</td><td>' . $data['count'][$i]['ICD_10_description'] . '</td><td>' . $rows_under_age['TOTAL_UNDER_AGE'] . '</td><td>' . $rows_over_age['TOTAL_OVER_AGE'] . '</td><td>' . $rows_male['TOTAL_MALE'] . '</td><td>' . $rows_female['TOTAL_FEMALE'] . '</td><td>' . $data['count'][$i]['TOTAL'] . '</td>'; ?>
+                <?php echo '<td>' . $data['count'][$i]['ICD_10_code'] . '</td><td>' . $data['count'][$i]['ICD_10_description'] . '</td><td>' . $rows_under_age['TOTAL_UNDER_AGE'] . '</td><td>' . $rows_over_age['TOTAL_OVER_AGE'] . '</td><td>' . $rows_male['TOTAL_MALE'] . '</td><td>' . $rows_female['TOTAL_FEMALE'] . '</td><td>' . $data['count'][$i]['TOTAL'] . '</td>'; ?>
             <tr>
                 <?php
             }
@@ -1390,6 +1390,26 @@ class selianreport extends report {
         }
 
         function _GetDailyLabItemTotal($curr_day_start, $day, $item_id) {
+            global $db;
+            $debug = FALSE;
+            ($debug) ? $db->debug = TRUE : $db->debug = FALSE;
+
+            $curr_day_end = $curr_day_start + (24 * 60 * 60 - 1);
+
+            if ($item_id != "") {
+                $sql = "SELECT count(id) as RetVal FROM tmp_laboratories WHERE id='" . $item_id . "'  AND send_date >=$curr_day_start AND send_date <=$curr_day_end";
+            } else {
+                $sql = "SELECT count(id) as RetVal FROM tmp_laboratories WHERE send_date >=$curr_day_start AND send_date <=$curr_day_end";
+            }
+
+            $res_ptr = $db->Execute($sql);
+            if ($res_row = $res_ptr->FetchRow())
+                return $res_row['RetVal'];
+            else
+                return 0;
+        }
+
+        function _GetDailyLabItemTestsTotal($curr_day_start, $day, $item_id) {
             global $db;
             $debug = FALSE;
             ($debug) ? $db->debug = TRUE : $db->debug = FALSE;
@@ -3942,6 +3962,41 @@ paramater_name as id
                 return TRUE;
             else
                 return FALSE;
+        }
+
+        function _Create_lab_tests_table($start_timeframe, $end_timeframe, $admission) {
+            global $db;
+            $db->debug = false;
+
+            $end_timeframe += (24 * 60 * 60 - 1);
+
+            if ($admission == 1) {
+                $sql_admission = " encounter_class_nr='" . $admission . "'";
+            } else
+            if ($admission == 2) {
+                $sql_admission = " encounter_class_nr='" . $admission . "'";
+            } else {
+                $sql_admission = " 1=1 ";
+            }
+
+            // SELECT-Statement with all the informations we need:
+            $sql_d = "DROP TABLE IF EXISTS `tmp_laboratories`";
+            $db_ptr = $db->Execute($sql_d);
+            $sql_s = "CREATE TEMPORARY TABLE tmp_laboratories ENGINE=MEMORY (SELECT care_test_request_chemlabor.batch_nr, UNIX_TIMESTAMP( care_test_request_chemlabor.create_time ) AS send_date, 
+                care_test_request_chemlabor.status, paramater_name AS id
+                FROM care_test_request_chemlabor
+                INNER JOIN care_test_findings_chemlabor_sub ON care_test_request_chemlabor.batch_nr = care_test_findings_chemlabor_sub.job_id
+                INNER JOIN care_encounter ON care_test_request_chemlabor.encounter_nr = care_encounter.encounter_nr
+                    WHERE $sql_admission 
+                    AND UNIX_TIMESTAMP(care_test_request_chemlabor.create_time)>='" . $start_timeframe . "' 
+                    AND UNIX_TIMESTAMP(care_test_request_chemlabor.create_time)<='" . $end_timeframe . "')";
+//            echo $sql_s;
+            if ($db_ptr = $db->Execute($sql_s)) {
+//                print_r($db_ptr);
+                return TRUE;
+            } else {
+                return FALSE;
+            }
         }
 
         function DisplayBillingTestSummary($start_timeframe, $end_timeframe) {
@@ -6497,7 +6552,142 @@ paramater_name as id
             echo $table;
         }
 
-        //**********************************************************************************************************************************************
+//***********************************************************************************************************************************
+        function DisplayMonthlyLabTestsSummary($start_timeframe, $end_timeframe, $admission) {
+            global $db;
+            global $PRINTOUT;
+            global $LDLaboratoryReports, $LDstarttime, $LDendtime, $LDNothinginList, $LDNA, $LDtotal;
+
+            $debug = FALSE;
+            ($debug) ? $db->debug = TRUE : $db->debug = FALSE;
+
+            $first_day_of_req_month = 0;
+            $last_day_of_req_month = 0;
+            $end_timeframe += (24 * 60 * 60 - 1);
+
+            $first_day_of_req_month = date("d", $start_timeframe);
+            $last_day_of_req_month = date("d", $end_timeframe);
+
+            if (!$PRINTOUT) {
+                $bg_color_1 = "#ffffaa";
+                $bg_color_2 = "#ffffbb";
+            } else {
+                $bg_color_1 = "";
+                $bg_color_2 = "";
+            }
+
+            $bg_color_swich = FALSE;
+
+
+            $this->_Create_lab_tests_table($start_timeframe, $end_timeframe, $admission);
+
+            echo "Laboratory Reports by time range: starttime: " . date("d.m.y :: G:i:s", $start_timeframe) . " endtime: " . date("d.m.y :: G:i:s", $end_timeframe) . "<br><br><br>";
+
+            $sql = "SELECT nr, name, id FROM care_tz_laboratory_param WHERE group_id!='-1' ORDER BY name";
+
+            $rs_ptr = $db->Execute($sql);
+            $table = "";
+            if ($res_array = $rs_ptr->GetArray()) {
+
+                while (list($u, $v) = each($res_array)) {
+
+                    $item_count = 0;
+                    $item_total = 0;
+
+                    if (!$PRINTOUT) {
+
+                        if ($bg_color_swich) {
+                            $bg_color = $bg_color_1;
+                            $bg_color_swich = FALSE;
+                        } else {
+                            $bg_color = $bg_color_2;
+                            $bg_color_swich = TRUE;
+                        } // end of if ($bg_color_swich)
+
+                        $table .= "<tr bgcolor=$bg_color>\n";
+                    } else {
+
+                        $table .= "<tr>\n";
+                    }
+
+
+
+                    $table.="<td>\n";
+                    $table.="  " . $v['name'];
+                    $table.="</td>\n";
+
+                    for ($day = $first_day_of_req_month; $day <= $last_day_of_req_month; $day++) {
+                        $current_day = $this->_get_requested_day($start_timeframe, $day - 1);
+                        $item_count = $this->_GetDailyLabItemTestsTotal($current_day, $day, $v['id']);
+                        $item_total+= $item_count;
+
+                        if ($current_day > time()) {
+                            if (!$PRINTOUT)
+                                $td_bg_color = "#ffffff";
+                            $italic_tag_open = "<i>";
+                            $italic_tag_close = "</i>";
+                        } else {
+                            if (!$PRINTOUT)
+                                $td_bg_color = $bg_color;
+                            $italic_tag_open = "";
+                            $italic_tag_close = "";
+                        } // end of if ($current_day > time())
+
+                        $table.="<td bgcolor=\"$td_bg_color\" align=\"right\">" . $italic_tag_open . $item_count . $italic_tag_close . "</td>\n";
+                    }
+
+                    $table.="<td align=\"right\">\n";
+                    $table.="  " . $item_total;
+                    $table.="</td>\n";
+                    $table.="</tr>\n";
+                } // end of while (list($u,$v)=each($res_array))
+
+                $table .= "<tr bgcolor=$bg_color>\n";
+                $table .= "<td><strong>&sum;</strong></td>\n";
+
+                $daily_count = 0;
+                $daily_total = 0;
+
+                for ($day = $first_day_of_req_month; $day <= $last_day_of_req_month; $day++) {
+                    $current_day = $this->_get_requested_day($start_timeframe, $day - 1);
+                    $daily_count = $this->_GetDailyLabItemTotal($current_day, $day, "");
+                    $total_count+= $daily_count;
+
+                    if ($current_day > time()) {
+                        if (!$PRINTOUT)
+                            $td_bg_color = "#ffffff";
+                        $italic_tag_open = "<i>";
+                        $italic_tag_close = "</i>";
+                    } else {
+                        if (!$PRINTOUT)
+                            $td_bg_color = $bg_color;
+                        $italic_tag_open = "";
+                        $italic_tag_close = "";
+                    } // end of if ($current_day > time())
+
+                    $table.="<td bgcolor=\"$td_bg_color\" align=\"right\"><b>" . $italic_tag_open . $daily_count . $italic_tag_close . "</b></td>\n";
+                }
+                $table.="<td bgcolor=\"$td_bg_color\" align=\"right\"><b>" . $italic_tag_open . $total_count . $italic_tag_close . "<b></td>\n";
+            } else {
+                $table .= "<tr bgcolor=$bg_color>\n";
+
+                $table.="<td>\n";
+                $table.="  " . $LDNothinginList;
+                $table.="</td>\n";
+
+                $table.="<td colspan=31>\n";
+                $table.="</td>\n";
+
+                $table.="<td>\n";
+                $table.=$LDNA;
+                $table.="</td>\n";
+                $table.="</tr>\n";
+            } // End of if ($res_array = $rs_ptr->GetArray())
+
+            echo $table;
+        }
+
+//**********************************************************************************************************************************************
 
         function Detailed_Revenue($date_from, $date_to, $company, $admission, $in_out_patient) {
             //The detailed revenue function was written by Israel Pascal
@@ -6620,7 +6810,7 @@ paramater_name as id
             <tr bgcolor="lightgrey">
                 <th width="70" >FROM:</th><th width="150" colspan="2"><?php echo date('d-m-Y H:i:s', $date_from_timestamp); ?></th><th width="70">TO:</th><th width="150" colspan="3"><?php echo date('d-m-Y H:i:s', $date_to_timestamp); ?></th><th colspan="6"><?php echo $company_names; ?></th> 
             </tr>
-        <?php fputcsv($filename, array('FROM:', date('d-m-Y H:i:s', $date_from_timestamp), 'TO:', date('d-m-Y H:i:s', $date_to_timestamp), $company_names)); ?>
+            <?php fputcsv($filename, array('FROM:', date('d-m-Y H:i:s', $date_from_timestamp), 'TO:', date('d-m-Y H:i:s', $date_to_timestamp), $company_names)); ?>
             <tr>
                 <th width="70"  scope="col" font-size="8"> <?php echo $LDBilled_date; ?></th>
                 <th width="70"  scope="col"> <?php echo $LDAdmission_date; ?></th>
@@ -6672,7 +6862,7 @@ paramater_name as id
                     <td width="70" scope="col" bgcolor="lightblue"> </td>
                     <td width="70" scope="col" bgcolor="lightblue"> </td>
                     <td width="70" scope="col" bgcolor="lightblue"> </td>
-                <?php //fputcsv($filename,array(date('d.M.Y',$rows_particlars['billed_date']),date('d.M.Y',strtotime($rows_particlars['admission_date'])),$rows_particlars['name_last'].' '.$rows_particlars['name_first'],date('d.M.Y',strtotime($rows_particlars['date_birth'])),$rows_particlars['selian_pid'],$rows_particlars['membership_nr'],$rows_particlars['form_nr'],'','','','','',''));?>
+                    <?php //fputcsv($filename,array(date('d.M.Y',$rows_particlars['billed_date']),date('d.M.Y',strtotime($rows_particlars['admission_date'])),$rows_particlars['name_last'].' '.$rows_particlars['name_first'],date('d.M.Y',strtotime($rows_particlars['date_birth'])),$rows_particlars['selian_pid'],$rows_particlars['membership_nr'],$rows_particlars['form_nr'],'','','','','','')); ?>
                 </tr>
                 <?php
                 $total_items = 0;
@@ -6808,40 +6998,40 @@ paramater_name as id
                     <td width="70" scope="col" font-size="8"> <?php echo $class['purch_class']; ?></td>
                     <td width="70" scope="col" font-size="8"> <?php echo $class['purch_class']; ?></td>
                     <td width="70" scope="col" font-size="8"> <?php echo $rows_dep['amount']; ?></td>
-                    <td width="70" scope="col" font-size="8"> <?php //echo  $rows_dep['price']; ?></td>
+                    <td width="70" scope="col" font-size="8"> <?php //echo  $rows_dep['price'];         ?></td>
                     <td width="70" scope="col" font-size="8"> <?php echo $rows_dep['price']; ?></td>
                 </tr>
-            <?php fputcsv($filename, array(date('d.M.y', $rows_dep['billed_date']), date('d.M.y', strtotime($rows_dep['encounter_date'])), $rows_dep['name_last'] . ' ' . $rows_dep['name_first'], date('d.M.y', strtotime($rows_dep['date_birth'])), $rows_dep['selian_pid'], $rows_dep['membership_nr'], $rows_dep['form_nr'], $rows_dep['partcode'], $class['purch_class'], $class['purch_class'], $rows_dep['amount'], 'Null', $rows_dep['price'])); ?>
-            <?php
-        }
+                <?php fputcsv($filename, array(date('d.M.y', $rows_dep['billed_date']), date('d.M.y', strtotime($rows_dep['encounter_date'])), $rows_dep['name_last'] . ' ' . $rows_dep['name_first'], date('d.M.y', strtotime($rows_dep['date_birth'])), $rows_dep['selian_pid'], $rows_dep['membership_nr'], $rows_dep['form_nr'], $rows_dep['partcode'], $class['purch_class'], $class['purch_class'], $rows_dep['amount'], 'Null', $rows_dep['price'])); ?>
+                <?php
+            }
 
 //***********************************END PATIENT WITH DEPOSIT******************************************************************************
 //***********************************START PATIENT TOPUP***********************************************************************************
 
-        echo '<tr bgcolor="lightgrey"><td colspan="13" align="center">PATIENT TOPUP</td></tr>';
-        fputcsv($filename, array('PATIENTS WITH TOPUP'));
+            echo '<tr bgcolor="lightgrey"><td colspan="13" align="center">PATIENT TOPUP</td></tr>';
+            fputcsv($filename, array('PATIENTS WITH TOPUP'));
 //patients with topup                    
-        $sql_topup = "SELECT  cp.pid,billelem.nr,billelem.User_Id,cp.name_first, cp.name_last,cp.date_birth,cp.membership_nr,ce.form_nr,cp.selian_pid,ce.encounter_nr,ce.encounter_class_nr,ce.current_ward_nr,ce.current_dept_nr,billelem.insurance_id,ce.encounter_date,billelem.date_change AS billed_date, billelem.description, billelem.amount,billelem.price 
+            $sql_topup = "SELECT  cp.pid,billelem.nr,billelem.User_Id,cp.name_first, cp.name_last,cp.date_birth,cp.membership_nr,ce.form_nr,cp.selian_pid,ce.encounter_nr,ce.encounter_class_nr,ce.current_ward_nr,ce.current_dept_nr,billelem.insurance_id,ce.encounter_date,billelem.date_change AS billed_date, billelem.description, billelem.amount,billelem.price 
           FROM care_person AS cp 
                INNER JOIN care_encounter AS ce ON cp.pid = ce.pid 
                INNER JOIN care_tz_billing_archive AS cba ON ce.encounter_nr = cba.encounter_nr 
                INNER JOIN care_tz_billing_archive_elem AS billelem ON billelem.nr = cba.nr 
           WHERE description='Topup' AND billelem.date_change BETWEEN '" . $date_from_timestamp . "' AND '" . $date_to_timestamp . "' " . $in_out_patient . " " . $and_PayType . "";
-        $sql_topup_result = $db->Execute($sql_topup);
+            $sql_topup_result = $db->Execute($sql_topup);
 
-        while ($rows_topup = $sql_topup_result->fetchRow()) {
-            $total_topup+=$rows_topup['price'];
-            $sql_deposit_topup = "SELECT description,price,encounter_nr,cbae.nr 
+            while ($rows_topup = $sql_topup_result->fetchRow()) {
+                $total_topup+=$rows_topup['price'];
+                $sql_deposit_topup = "SELECT description,price,encounter_nr,cbae.nr 
 			                                FROM care_tz_billing_archive_elem AS cbae 
 			                                INNER JOIN care_tz_billing_archive AS cba
 			                        ON cbae.nr=cba.nr
 			                        WHERE description='Advance' AND encounter_nr=" . $rows_topup['encounter_nr'];
-            $amt_deposited_topup = 0;
-            $deposit_topup_result = $db->Execute($sql_deposit_topup);
-            while ($rows_total_deposit_topup = $deposit_topup_result->FetchRow()) {
-                $amt_deposited_topup+=$rows_total_deposit_topup['price'];
-            }//end while total deposited                   
-            ?>
+                $amt_deposited_topup = 0;
+                $deposit_topup_result = $db->Execute($sql_deposit_topup);
+                while ($rows_total_deposit_topup = $deposit_topup_result->FetchRow()) {
+                    $amt_deposited_topup+=$rows_total_deposit_topup['price'];
+                }//end while total deposited                   
+                ?>
                 <tr bgcolor="grey">
                     <td bgcolor="lightblue">&nbsp;<?php echo date('j-m-Y', $rows_topup['billed_date']); ?></td>
                     <td bgcolor="lightblue">&nbsp;<?php echo date('j-m-Y', strtotime($rows_topup['encounter_date'])); ?></td>
@@ -6857,93 +7047,93 @@ paramater_name as id
                     <td bgcolor="lightblue"></td>
                     <td bgcolor="lightblue"></td>
                 </tr>
-            <?php //fputcsv($filename,array(date('j-m-Y',$rows_topup['billed_date']),date('j-m-Y',strtotime($rows_topup['encounter_date'] )),$rows_topup['name_first'].' '.$rows_topup['name_last'],date('j-m-Y',strtotime($rows_topup['date_birth'])),$rows_topup['selian_pid'],$rows_topup['membership_nr'],$rows_topup['form_nr'],$LDNA,'','','','','')) ?>;              
+                <?php //fputcsv($filename,array(date('j-m-Y',$rows_topup['billed_date']),date('j-m-Y',strtotime($rows_topup['encounter_date'] )),$rows_topup['name_first'].' '.$rows_topup['name_last'],date('j-m-Y',strtotime($rows_topup['date_birth'])),$rows_topup['selian_pid'],$rows_topup['membership_nr'],$rows_topup['form_nr'],$LDNA,'','','','',''))  ?>;              
 
-            <?php
-            $sql_topup_items = "SELECT billelem.description,billelem.amount,(billelem.amount * billelem.price) AS total_price,pricelist.purchasing_class
+                <?php
+                $sql_topup_items = "SELECT billelem.description,billelem.amount,(billelem.amount * billelem.price) AS total_price,pricelist.purchasing_class
 			                                  FROM care_tz_billing_archive_elem AS billelem 
 			                                  INNER JOIN care_tz_drugsandservices AS pricelist
 			                                  ON pricelist.item_id=billelem.item_number
 			                             WHERE is_deposit_item=1 AND  nr=" . $rows_topup['nr'];
-            $total_topup_items = 0;
-            $sql_topup_items_result = $db->Execute($sql_topup_items);
-            while ($rows_topup_items = $sql_topup_items_result->FetchRow()) {
-                $total_topup_items+=$rows_topup_items['total_price'];
+                $total_topup_items = 0;
+                $sql_topup_items_result = $db->Execute($sql_topup_items);
+                while ($rows_topup_items = $sql_topup_items_result->FetchRow()) {
+                    $total_topup_items+=$rows_topup_items['total_price'];
 
-                switch ($rows_topup_items['purchasing_class']) {
-                    case "labtest":
-                        $total_lab+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'LAB TEST';
-                        break;
+                    switch ($rows_topup_items['purchasing_class']) {
+                        case "labtest":
+                            $total_lab+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'LAB TEST';
+                            break;
 
-                    case "dental":
-                        $total_dental+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'DENTAL';
-                        break;
+                        case "dental":
+                            $total_dental+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'DENTAL';
+                            break;
 
-                    case "eye-service":
-                        $total_eye_service+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'EYE SERVICE';
-                        break;
+                        case "eye-service":
+                            $total_eye_service+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'EYE SERVICE';
+                            break;
 
-                    case "minor_proc_op":
-                        $total_minor_proc_op+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'MINOR PROCEDURE';
-                        break;
+                        case "minor_proc_op":
+                            $total_minor_proc_op+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'MINOR PROCEDURE';
+                            break;
 
-                    case "service":
-                        $total_service+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'SERVICE';
-                        break;
+                        case "service":
+                            $total_service+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'SERVICE';
+                            break;
 
-                    case "supplies":
-                        $total_supplies+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'SUPPLIES';
-                        break;
+                        case "supplies":
+                            $total_supplies+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'SUPPLIES';
+                            break;
 
-                    case "supplies_laboratory":
-                        $total_supplies_laboratory+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'LABORATORY SUPPLIES';
-                        break;
+                        case "supplies_laboratory":
+                            $total_supplies_laboratory+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'LABORATORY SUPPLIES';
+                            break;
 
-                    case "surgical_op":
-                        $total_surgical_op+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'SURGICAL OP';
-                        break;
+                        case "surgical_op":
+                            $total_surgical_op+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'SURGICAL OP';
+                            break;
 
-                    case "drug_list":
-                        $total_drug_list+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'DRUG';
-                        break;
+                        case "drug_list":
+                            $total_drug_list+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'DRUG';
+                            break;
 
-                    case "drug_list_ctc":
-                        $total_drug_list_ctc+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'CTC DRUG';
-                        break;
+                        case "drug_list_ctc":
+                            $total_drug_list_ctc+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'CTC DRUG';
+                            break;
 
-                    case "drug_list_nhif":
-                        $total_drug_list_nhif+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'NHIF DRUG';
-                        break;
+                        case "drug_list_nhif":
+                            $total_drug_list_nhif+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'NHIF DRUG';
+                            break;
 
-                    case "xray":
-                        $total_xray+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'RADIOLOGY';
-                        break;
+                        case "xray":
+                            $total_xray+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'RADIOLOGY';
+                            break;
 
-                    default:
-                        $total_other+=$rows_topup_items['total_price'];
-                        $class['purch_class'] = 'OTHER';
-                        break;
-                }//end switch purchasing_class
-                ?>
+                        default:
+                            $total_other+=$rows_topup_items['total_price'];
+                            $class['purch_class'] = 'OTHER';
+                            break;
+                    }//end switch purchasing_class
+                    ?>
                     <tr>
                         <td colspan="8" bgcolor="grey"  ></td><td><?php echo $rows_topup_items['description']; ?></td>
                         <td><?php echo $class['purch_class']; ?></td>
                         <td><?php echo $rows_topup_items['amount']; ?></td>
                         <td><?php echo $rows_topup_items['total_price']; ?></td>
                         <td>null</td>
-                    <?php fputcsv($filename, array(date('j-m-Y', $rows_topup['billed_date']), date('j-m-Y', strtotime($rows_topup['encounter_date'])), $rows_topup['name_first'] . ' ' . $rows_topup['name_last'], date('j-m-Y', strtotime($rows_topup['date_birth'])), $rows_topup['selian_pid'], $rows_topup['membership_nr'], $rows_topup['form_nr'], $LDNA, $rows_topup_items['description'], $class['purch_class'], $rows_topup_items['amount'], $rows_topup_items['total_price'])); ?>
+                        <?php fputcsv($filename, array(date('j-m-Y', $rows_topup['billed_date']), date('j-m-Y', strtotime($rows_topup['encounter_date'])), $rows_topup['name_first'] . ' ' . $rows_topup['name_last'], date('j-m-Y', strtotime($rows_topup['date_birth'])), $rows_topup['selian_pid'], $rows_topup['membership_nr'], $rows_topup['form_nr'], $LDNA, $rows_topup_items['description'], $class['purch_class'], $rows_topup_items['amount'], $rows_topup_items['total_price'])); ?>
 
 
 
@@ -6955,36 +7145,36 @@ paramater_name as id
                 <tr bgcolor="red"><td colspan="13" bgcolor="red"></td></tr>             
                 <tr bgcolor="lightblue"><td colspan="8" ><B><font size="3">DEPOSITED <?php echo number_format($amt_deposited_topup) . ';  '; ?></B>SUB TOTAL <?php echo number_format($total_topup_items) . ';'; ?><i>Rec# <?php echo $rows_topup['nr'] . ';'; ?> CASHIER <?php echo $rows_topup['User_Id']; ?> </i></font></td><td colspan="4"><B><font size="3"><i>FINAL BILL(TOPUP)</i>:</font></B></td><td><span style="border-bottom:double black;"><font size="3"><?php echo number_format($rows_topup['price']); ?><i></i></font></span></td></tr>          
                 <tr bgcolor="red"><td colspan="13" bgcolor="red"></td></tr>
-                <?php // fputcsv($filename,array('','','','','','','','','','','','',''));?>
-            <?php //fputcsv($filename,array('','','','','','','','DEPOSITED'.number_format($amt_deposited_topup),'SUB TOTAL'.number_format($total_topup_items),'REC#'.$rows_topup['nr'],'CASHIER '.$rows_topup['User_Id'],'','','',''.)); ?>
-            <?php
-        }
+                <?php // fputcsv($filename,array('','','','','','','','','','','','','')); ?>
+                <?php //fputcsv($filename,array('','','','','','','','DEPOSITED'.number_format($amt_deposited_topup),'SUB TOTAL'.number_format($total_topup_items),'REC#'.$rows_topup['nr'],'CASHIER '.$rows_topup['User_Id'],'','','',''.)); ?>
+                <?php
+            }
 //***********************************END PATIENT TOPUP*************************************************************************************
 //***********************************START PATIENT REFUND**********************************************************************************
-        echo '<tr bgcolor="lightgrey"><td colspan="13" align="center">PATIENT REFUND</td></tr>';
+            echo '<tr bgcolor="lightgrey"><td colspan="13" align="center">PATIENT REFUND</td></tr>';
 
-        //patients with refund
-        $sql_refund = "SELECT  cp.pid,billelem.nr,billelem.User_Id, cp.name_first, cp.name_last,cp.date_birth,cp.membership_nr,ce.form_nr,cp.selian_pid,ce.encounter_nr,ce.encounter_class_nr,ce.current_ward_nr,ce.current_dept_nr,billelem.insurance_id,ce.encounter_date,billelem.date_change AS billed_date, billelem.description, billelem.amount,billelem.price 
+            //patients with refund
+            $sql_refund = "SELECT  cp.pid,billelem.nr,billelem.User_Id, cp.name_first, cp.name_last,cp.date_birth,cp.membership_nr,ce.form_nr,cp.selian_pid,ce.encounter_nr,ce.encounter_class_nr,ce.current_ward_nr,ce.current_dept_nr,billelem.insurance_id,ce.encounter_date,billelem.date_change AS billed_date, billelem.description, billelem.amount,billelem.price 
           FROM care_person AS cp 
                INNER JOIN care_encounter AS ce ON cp.pid = ce.pid 
                INNER JOIN care_tz_billing_archive AS cba ON ce.encounter_nr = cba.encounter_nr 
                INNER JOIN care_tz_billing_archive_elem AS billelem ON billelem.nr = cba.nr 
           WHERE description='Refund' AND billelem.date_change BETWEEN '" . $date_from_timestamp . "' AND '" . $date_to_timestamp . "' " . $in_out_patient . " " . $and_PayType . "";
-        $sql_refund_result = $db->Execute($sql_refund);
+            $sql_refund_result = $db->Execute($sql_refund);
 
-        while ($rows_refund = $sql_refund_result->fetchRow()) {
-            $total_refund+=$rows_refund['price'];
-            $sql_deposit_refund = "SELECT description,price,encounter_nr,cbae.nr 
+            while ($rows_refund = $sql_refund_result->fetchRow()) {
+                $total_refund+=$rows_refund['price'];
+                $sql_deposit_refund = "SELECT description,price,encounter_nr,cbae.nr 
 			                                FROM care_tz_billing_archive_elem AS cbae 
 			                                INNER JOIN care_tz_billing_archive AS cba
 			                        ON cbae.nr=cba.nr
 			                        WHERE description='Advance' AND encounter_nr=" . $rows_refund['encounter_nr'];
-            $amt_deposited_refund = 0;
-            $deposit_refund_result = $db->Execute($sql_deposit_refund);
-            while ($rows_total_deposit_refund = $deposit_refund_result->FetchRow()) {
-                $amt_deposited_refund += $rows_total_deposit_refund['price'];
-            }//end while total deposited                   
-            ?>
+                $amt_deposited_refund = 0;
+                $deposit_refund_result = $db->Execute($sql_deposit_refund);
+                while ($rows_total_deposit_refund = $deposit_refund_result->FetchRow()) {
+                    $amt_deposited_refund += $rows_total_deposit_refund['price'];
+                }//end while total deposited                   
+                ?>
                 <tr bgcolor="grey">;
                     <td bgcolor="lightblue">&nbsp;<?php echo date('j-m-Y', $rows_refund['billed_date']); ?></td>
                     <td bgcolor="lightblue">&nbsp;<?php echo date('j-m-Y', strtotime($rows_refund['encounter_date'])); ?></td>
@@ -7087,7 +7277,7 @@ paramater_name as id
                         <td><?php echo $rows_refund_items['amount']; ?></td>
                         <td><?php echo $rows_refund_items['total_price']; ?></td>
                         <td>null</td>
-                    <?php fputcsv($filename, array(date('j-m-Y', $rows_refund['billed_date']), date('j-m-Y', strtotime($rows_refund['encounter_date'])), $rows_refund['name_first'] . ' ' . $rows_refund['name_last'], date('j-m-Y', strtotime($rows_refund['date_birth'])), $rows_refund['selian_pid'], $rows_refund['membership_nr'], $rows_refund['form_nr'], $LDNA, $rows_refund_items['description'], $class['purch_class'], $rows_refund_items['amount'], $rows_refund_items['total_price'])); ?>		   
+                        <?php fputcsv($filename, array(date('j-m-Y', $rows_refund['billed_date']), date('j-m-Y', strtotime($rows_refund['encounter_date'])), $rows_refund['name_first'] . ' ' . $rows_refund['name_last'], date('j-m-Y', strtotime($rows_refund['date_birth'])), $rows_refund['selian_pid'], $rows_refund['membership_nr'], $rows_refund['form_nr'], $LDNA, $rows_refund_items['description'], $class['purch_class'], $rows_refund_items['amount'], $rows_refund_items['total_price'])); ?>		   
                     </tr>  
                     <?php
                 }
@@ -7125,7 +7315,7 @@ paramater_name as id
                     <th width="89" scope="col"><?php echo $LDOther; ?></th>
                     <th width="89" scope="col">TOTAL EXCL. DEPOSIT ITEMS</th>
                     <th width="89" scope="col">TOTAL WITH DEPOSIT ITEMS</th>
-            <?php fputcsv($filename, array($LDLab, $LDDrugs, $LDRadilogy, $LDDental, $LDEye, $LDMinProc, $LDProcSurg, $LDServicesTotal, $LDConsum, $LDSuppliesLab, $LDOther, 'TOTAL EXCL. DEPOSIT ITEMS', 'TOTAL WITH DEPOSIT ITEMS')); ?>
+                    <?php fputcsv($filename, array($LDLab, $LDDrugs, $LDRadilogy, $LDDental, $LDEye, $LDMinProc, $LDProcSurg, $LDServicesTotal, $LDConsum, $LDSuppliesLab, $LDOther, 'TOTAL EXCL. DEPOSIT ITEMS', 'TOTAL WITH DEPOSIT ITEMS')); ?>
                 </tr>
                 <tr>
                     <th width="89" scope="col"><?php echo number_format($total_lab); ?></th>
@@ -7145,13 +7335,13 @@ paramater_name as id
                 <tr bgcolor="black"><td colspan="13" bgcolor="red"></td></tr>
             </table>
         </p>
-            <?php fputcsv($filename, array(number_format($total_lab), number_format($drugs_total), number_format($total_xray), number_format($total_dental), number_format($total_eye_service), number_format($total_minor_proc_op), number_format($total_surgical_op), number_format($total_service), number_format($total_supplies), number_format($total_supplies_laboratory), number_format($total_other), number_format($total_all_exl_deposit - $sum_topup_refund_items), number_format($total_all_exl_deposit))); ?>
+        <?php fputcsv($filename, array(number_format($total_lab), number_format($drugs_total), number_format($total_xray), number_format($total_dental), number_format($total_eye_service), number_format($total_minor_proc_op), number_format($total_surgical_op), number_format($total_service), number_format($total_supplies), number_format($total_supplies_laboratory), number_format($total_other), number_format($total_all_exl_deposit - $sum_topup_refund_items), number_format($total_all_exl_deposit))); ?>
         <table class="report" width="90%" border="0">
             <tr>
                 <th align="left"><font size="3"><span style="border-bottom:double black;">MAIN SUMMARY:</span></font></th><th align="left"><font size="5">GRAND TOTAL:&nbsp;&nbsp;&nbsp;<span style="border-bottom:double black"><?php echo number_format($total_all_exl_deposit - $sum_topup_refund_items + $sum_deposits) . '/='; ?></span></font></th>          
-            <?php fputcsv($filename, array('GRAND TOTAL:', number_format($total_all_exl_deposit - $sum_topup_refund_items + $sum_deposits))); ?> 
+                <?php fputcsv($filename, array('GRAND TOTAL:', number_format($total_all_exl_deposit - $sum_topup_refund_items + $sum_deposits))); ?> 
 
-        <?php fputcsv($filename, array('MAIN SUMMARY')); ?>   
+                <?php fputcsv($filename, array('MAIN SUMMARY')); ?>   
             <tr>
             <tr><td></td></tr>
             <tr align="left"><td><font size="2">TOTAL DEPOSIT:&nbsp;&nbsp;&nbsp;<?php echo number_format($total_deposit); ?></font></td></tr>
@@ -7159,10 +7349,10 @@ paramater_name as id
             <tr><td align="left"><font size="2">TOTAL REFUND:&nbsp;&nbsp;&nbsp;&nbsp;<?php echo number_format($total_refund); ?></font></td></tr>
             <tr><td align="left"><font size="3"><B>TOTAL SUM</B></font>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font size="3"><span style="border-bottom:double black;" ><?php echo number_format($sum_deposits); ?></span></font></td><td><a href="./gui/downloads/detailed_revenue.csv"><img border=0 src="../../gui/img/common/default/savedisk.gif"></a></td></tr>
 
-        <?php fputcsv($filename, array('TOTAL DEPOSIT:', number_format($total_deposit))); ?>
-        <?php fputcsv($filename, array('TOTAL TOPUP:', number_format($total_topup))); ?>
-        <?php fputcsv($filename, array('TOTAL REFUND:', number_format($total_refund))); ?>
-        <?php fputcsv($filename, array('TOTAL SUM:', number_format($sum_deposits))); ?> 
+            <?php fputcsv($filename, array('TOTAL DEPOSIT:', number_format($total_deposit))); ?>
+            <?php fputcsv($filename, array('TOTAL TOPUP:', number_format($total_topup))); ?>
+            <?php fputcsv($filename, array('TOTAL REFUND:', number_format($total_refund))); ?>
+            <?php fputcsv($filename, array('TOTAL SUM:', number_format($sum_deposits))); ?> 
 
 
 
@@ -7191,102 +7381,102 @@ paramater_name as id
 
 
 
-                <?php
-                fclose($filename);
-            }
+        <?php
+        fclose($filename);
+    }
 
 //*************************************************************************************************************************************************	
 //*************************************************************************************************************************************************	
-            function MtuhaDiagnosisBlocks($nr, $companies) {
-                /*
-                  This function was written by Israel Pascal
-                  ELCT e-Health Unit
-                  Arusha Tanzania
-                  9th DEC 2015
-                  israel.pascal10@gmail.com
-                  israel@elct.or.tz
-                  +255767809660
-                 */
-                global $db, $LDDateFrom, $LDDateTo, $root_path, $LDShow, $date_format;
+    function MtuhaDiagnosisBlocks($nr, $companies) {
+        /*
+          This function was written by Israel Pascal
+          ELCT e-Health Unit
+          Arusha Tanzania
+          9th DEC 2015
+          israel.pascal10@gmail.com
+          israel@elct.or.tz
+          +255767809660
+         */
+        global $db, $LDDateFrom, $LDDateTo, $root_path, $LDShow, $date_format;
 
 
 
 
-                if (isset($_POST['show']) || !empty($_POST['show'])) {
+        if (isset($_POST['show']) || !empty($_POST['show'])) {
 
-                    if ($_POST['date_from'] <= $_POST['date_to']) {
-                        if (isset($_POST['admission_id']) || !empty($_POST['admission_id'])) {
-                            if ($_POST['admission_id'] == 'all_opd_ipd') {
-                                //all opd and ipd 
-                                $dept_ward = '';
-                                $ward_dept_name = 'ALL INPATIENT AND OUTPATIENT';
-                            } else {
-                                if ($_POST['admission_id'] == 1) {
-                                    //ipd
-                                    switch ($_POST['current_ward_nr']) {
-                                        case 'all_ipd':
-                                            $dept_ward = 'AND current_ward_nr>0';
-                                            $ward_dept_name = 'ALL INPATIENT';
-                                            break;
-                                        default:
-                                            $dept_ward = 'AND current_ward_nr=' . $_POST['current_ward_nr'];
-                                            $sql_ward_name = "SELECT name FROM care_ward WHERE nr=" . $_POST['current_ward_nr'];
-                                            $result_ward_name = $db->Execute($sql_ward_name);
-                                            $in_out_name = $result_ward_name->FetchRow();
-                                            $ward_dept_name = $in_out_name['name'];
-                                    }
-                                } else {
-                                    //opd
-                                    switch ($_POST['dept_nr']) {
-                                        case 'all_opd':
-                                            $dept_ward = 'AND current_dept_nr>0';
-                                            $ward_dept_name = 'ALL OUTPATIENT';
-                                            break;
-                                        default:
-                                            $dept_ward = 'AND current_dept_nr=' . $_POST['dept_nr'];
-                                            $sql_dept_name = "SELECT name_formal FROM care_department WHERE nr=" . $_POST['dept_nr'];
-                                            $result_dept_name = $db->Execute($sql_dept_name);
-                                            $dept_name = $result_dept_name->FetchRow();
-                                            $ward_dept_name = $dept_name['name_formal'];
-                                    }
-                                }
-                            }//end dept ward validation
-                            $error = false;
-                            for ($i = 1; $i <= $_POST['blocks']; $i++) {
+            if ($_POST['date_from'] <= $_POST['date_to']) {
+                if (isset($_POST['admission_id']) || !empty($_POST['admission_id'])) {
+                    if ($_POST['admission_id'] == 'all_opd_ipd') {
+                        //all opd and ipd 
+                        $dept_ward = '';
+                        $ward_dept_name = 'ALL INPATIENT AND OUTPATIENT';
+                    } else {
+                        if ($_POST['admission_id'] == 1) {
+                            //ipd
+                            switch ($_POST['current_ward_nr']) {
+                                case 'all_ipd':
+                                    $dept_ward = 'AND current_ward_nr>0';
+                                    $ward_dept_name = 'ALL INPATIENT';
+                                    break;
+                                default:
+                                    $dept_ward = 'AND current_ward_nr=' . $_POST['current_ward_nr'];
+                                    $sql_ward_name = "SELECT name FROM care_ward WHERE nr=" . $_POST['current_ward_nr'];
+                                    $result_ward_name = $db->Execute($sql_ward_name);
+                                    $in_out_name = $result_ward_name->FetchRow();
+                                    $ward_dept_name = $in_out_name['name'];
+                            }
+                        } else {
+                            //opd
+                            switch ($_POST['dept_nr']) {
+                                case 'all_opd':
+                                    $dept_ward = 'AND current_dept_nr>0';
+                                    $ward_dept_name = 'ALL OUTPATIENT';
+                                    break;
+                                default:
+                                    $dept_ward = 'AND current_dept_nr=' . $_POST['dept_nr'];
+                                    $sql_dept_name = "SELECT name_formal FROM care_department WHERE nr=" . $_POST['dept_nr'];
+                                    $result_dept_name = $db->Execute($sql_dept_name);
+                                    $dept_name = $result_dept_name->FetchRow();
+                                    $ward_dept_name = $dept_name['name_formal'];
+                            }
+                        }
+                    }//end dept ward validation
+                    $error = false;
+                    for ($i = 1; $i <= $_POST['blocks']; $i++) {
 
-                                if ($_POST['start' . $i] > $_POST['end' . $i] || $_POST['start' . $i] == '' || $_POST['end' . $i] == '') {
-                                    $error = true;
-                                    $message = "ERROR! MAKE SURE INPUT BOX ARE NOT EMPTY AND START AGE IS LESS OR EQUAL TO END AGE";
-                                }
-                            }//end for loop
-                            if (!$error) {
-                                //query database
-                                $DateFromArray = explode('/', $_POST['date_from']);
-                                $DateToArray = explode('/', $_POST['date_to']);
-                                $DateStampFrom = mktime(00, 00, 00, $DateFromArray[1], $DateFromArray[0], $DateFromArray[2]);
-                                $DateStampTo = mktime(23, 59, 59, $DateToArray[1], $DateToArray[0], $DateToArray[2]);
+                        if ($_POST['start' . $i] > $_POST['end' . $i] || $_POST['start' . $i] == '' || $_POST['end' . $i] == '') {
+                            $error = true;
+                            $message = "ERROR! MAKE SURE INPUT BOX ARE NOT EMPTY AND START AGE IS LESS OR EQUAL TO END AGE";
+                        }
+                    }//end for loop
+                    if (!$error) {
+                        //query database
+                        $DateFromArray = explode('/', $_POST['date_from']);
+                        $DateToArray = explode('/', $_POST['date_to']);
+                        $DateStampFrom = mktime(00, 00, 00, $DateFromArray[1], $DateFromArray[0], $DateFromArray[2]);
+                        $DateStampTo = mktime(23, 59, 59, $DateToArray[1], $DateToArray[0], $DateToArray[2]);
 
-                                switch ($_POST['insurance']) {
-                                    case -2:
-                                        $cash_credit = '';
-                                        $health_fund = 'ALL';
-                                        break;
+                        switch ($_POST['insurance']) {
+                            case -2:
+                                $cash_credit = '';
+                                $health_fund = 'ALL';
+                                break;
 
-                                    case -1:
-                                        $cash_credit = "AND insurance_ID=13";
-                                        $health_fund = "CASH PATIENT";
-                                        break;
+                            case -1:
+                                $cash_credit = "AND insurance_ID=13";
+                                $health_fund = "CASH PATIENT";
+                                break;
 
-                                    default:
-                                        $cash_credit = "AND insurance_ID=" . $_POST['insurance'];
-                                        $sql_insurancename = "SELECT name FROM care_tz_company where id=" . $_POST['insurance'];
-                                        $insurance_name = $db->Execute($sql_insurancename);
-                                        $sql_insurancename = $insurance_name->FetchRow();
-                                        $health_fund = $sql_insurancename['name'];
-                                }
+                            default:
+                                $cash_credit = "AND insurance_ID=" . $_POST['insurance'];
+                                $sql_insurancename = "SELECT name FROM care_tz_company where id=" . $_POST['insurance'];
+                                $insurance_name = $db->Execute($sql_insurancename);
+                                $sql_insurancename = $insurance_name->FetchRow();
+                                $health_fund = $sql_insurancename['name'];
+                        }
 
-                                //Call all diagnosises based on specified date and department/ward
-                                $sql_diag = "CREATE TEMPORARY TABLE IF NOT EXISTS AllDiagTmp AS 
+                        //Call all diagnosises based on specified date and department/ward
+                        $sql_diag = "CREATE TEMPORARY TABLE IF NOT EXISTS AllDiagTmp AS 
 							   (SELECT diag.*,current_dept_nr,current_ward_nr,(DATE_FORMAT(NOW(),'%Y')-DATE_FORMAT( cp.date_birth, '%Y' )) AS birth_date,cp.sex,cp.death_encounter_nr 
 							   FROM care_tz_diagnosis AS diag 
 							   INNER JOIN care_encounter AS ce 
@@ -7302,128 +7492,128 @@ paramater_name as id
 
 
 
-                                $result_tmp = $db->Execute($sql_diag);
-                                $sql_grp = "SELECT ICD_10_code,ICD_10_description FROM AllDiagTmp GROUP BY ICD_10_code";
-                                $result_grp = $db->Execute($sql_grp);
+                        $result_tmp = $db->Execute($sql_diag);
+                        $sql_grp = "SELECT ICD_10_code,ICD_10_description FROM AllDiagTmp GROUP BY ICD_10_code";
+                        $result_grp = $db->Execute($sql_grp);
 
-                                $TABLE2 = '';
-                                $TABLE2.='<TR>';
+                        $TABLE2 = '';
+                        $TABLE2.='<TR>';
 
-                                $filename_mtuha = fopen('./gui/downloads/mtuha_detailed.csv', 'w');
+                        $filename_mtuha = fopen('./gui/downloads/mtuha_detailed.csv', 'w');
 
-                                while ($rows_tmp = $result_grp->FetchRow()) {
+                        while ($rows_tmp = $result_grp->FetchRow()) {
 
 
 
-                                    $TABLE2.='<TR><TD>' . $rows_tmp['ICD_10_description'] . '</TD><TD>' . $rows_tmp['ICD_10_code'] . '</TD>';
+                            $TABLE2.='<TR><TD>' . $rows_tmp['ICD_10_description'] . '</TD><TD>' . $rows_tmp['ICD_10_code'] . '</TD>';
 
-                                    //echo $rows_tmp['ICD_10_description'].'<br>';
+                            //echo $rows_tmp['ICD_10_description'].'<br>';
 
-                                    $pair = $_POST['blocks'];
-                                    for ($i = 1; $i <= $pair; $i++) {
-                                        $row_cases_female['total_female'] = 0;
-                                        $row_cases_male['total_male'] = 0;
-                                        $row_deaths_male['total_male'] = 0;
-                                        $row_deaths_female['total_female'] = 0;
-                                        $row_newp_male['total_male'] = 0;
-                                        $row_newp_female['total_female'] = 0;
-                                        $row_new_case_male['total_male'] = 0;
-                                        $row_new_case_female['total_female'] = 0;
-                                        $row_revisit_male['total_male'] = 0;
-                                        $row_revisit_female['total_female'] = 0;
+                            $pair = $_POST['blocks'];
+                            for ($i = 1; $i <= $pair; $i++) {
+                                $row_cases_female['total_female'] = 0;
+                                $row_cases_male['total_male'] = 0;
+                                $row_deaths_male['total_male'] = 0;
+                                $row_deaths_female['total_female'] = 0;
+                                $row_newp_male['total_male'] = 0;
+                                $row_newp_female['total_female'] = 0;
+                                $row_new_case_male['total_male'] = 0;
+                                $row_new_case_female['total_female'] = 0;
+                                $row_revisit_male['total_male'] = 0;
+                                $row_revisit_female['total_female'] = 0;
 
-                                        //CASES MALE AND FEMALE
-                                        $sql_cases_male = "SELECT count(*) AS total_male FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='m' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' ";
-                                        $sql_cases_female = "SELECT count(*) AS total_female FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='f' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' ";
+                                //CASES MALE AND FEMALE
+                                $sql_cases_male = "SELECT count(*) AS total_male FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='m' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' ";
+                                $sql_cases_female = "SELECT count(*) AS total_female FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='f' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' ";
 
-                                        //DEATHS MALE AND FEMALE
-                                        $sql_deaths_male = "SELECT count(*) AS total_male FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='m' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND death_encounter_nr>0 ";
-                                        $sql_deaths_female = "SELECT count(*) AS total_female FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='f' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND death_encounter_nr>0 ";
+                                //DEATHS MALE AND FEMALE
+                                $sql_deaths_male = "SELECT count(*) AS total_male FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='m' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND death_encounter_nr>0 ";
+                                $sql_deaths_female = "SELECT count(*) AS total_female FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='f' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND death_encounter_nr>0 ";
 
-                                        //NEW PATIENT MALE AND FEMALE
-                                        $sql_newp_male = "SELECT count(*) AS total_male FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='m' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND type like '%patient' ";
-                                        $sql_newp_female = "SELECT count(*) AS total_female FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='f' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND type like '%patient' ";
+                                //NEW PATIENT MALE AND FEMALE
+                                $sql_newp_male = "SELECT count(*) AS total_male FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='m' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND type like '%patient' ";
+                                $sql_newp_female = "SELECT count(*) AS total_female FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='f' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND type like '%patient' ";
 
-                                        //NEW CASE MALE AND FEMALE
-                                        $sql_new_case_male = "SELECT count(*) AS total_male FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='m' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND type='new' ";
-                                        $sql_new_case_female = "SELECT count(*) AS total_female FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='f' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND type='new' ";
+                                //NEW CASE MALE AND FEMALE
+                                $sql_new_case_male = "SELECT count(*) AS total_male FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='m' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND type='new' ";
+                                $sql_new_case_female = "SELECT count(*) AS total_female FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='f' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND type='new' ";
 
-                                        //REVISIT MALE AND FEMALE
-                                        $sql_revisit_male = "SELECT count(*) AS total_male FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='m' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND type='revisit' ";
-                                        $sql_revisit_female = "SELECT count(*) AS total_female FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='f' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND type='revisit' ";
+                                //REVISIT MALE AND FEMALE
+                                $sql_revisit_male = "SELECT count(*) AS total_male FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='m' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND type='revisit' ";
+                                $sql_revisit_female = "SELECT count(*) AS total_female FROM AllDiagTmp WHERE birth_date BETWEEN " . $_POST['start' . $i] . " AND " . $_POST['end' . $i] . " AND sex='f' AND ICD_10_code='" . $rows_tmp['ICD_10_code'] . "' AND type='revisit' ";
 
-                                        $result_cases_male = $db->Execute($sql_cases_male);
-                                        $result_cases_female = $db->Execute($sql_cases_female);
+                                $result_cases_male = $db->Execute($sql_cases_male);
+                                $result_cases_female = $db->Execute($sql_cases_female);
 
-                                        $result_deaths_male = $db->Execute($sql_deaths_male);
-                                        $result_deaths_female = $db->Execute($sql_deaths_female);
+                                $result_deaths_male = $db->Execute($sql_deaths_male);
+                                $result_deaths_female = $db->Execute($sql_deaths_female);
 
-                                        $result_newp_male = $db->Execute($sql_newp_male);
-                                        $result_newp_female = $db->Execute($sql_newp_female);
+                                $result_newp_male = $db->Execute($sql_newp_male);
+                                $result_newp_female = $db->Execute($sql_newp_female);
 
-                                        $result_new_case_male = $db->Execute($sql_new_case_male);
-                                        $result_new_case_female = $db->Execute($sql_new_case_female);
+                                $result_new_case_male = $db->Execute($sql_new_case_male);
+                                $result_new_case_female = $db->Execute($sql_new_case_female);
 
-                                        $result_revisit_male = $db->Execute($sql_revisit_male);
-                                        $result_revisit_female = $db->Execute($sql_revisit_female);
+                                $result_revisit_male = $db->Execute($sql_revisit_male);
+                                $result_revisit_female = $db->Execute($sql_revisit_female);
 
-                                        $row_cases_male = $result_cases_male->FetchRow();
-                                        $row_cases_female = $result_cases_female->FetchRow();
+                                $row_cases_male = $result_cases_male->FetchRow();
+                                $row_cases_female = $result_cases_female->FetchRow();
 
-                                        $row_deaths_male = $result_deaths_male->FetchRow();
-                                        $row_deaths_female = $result_deaths_female->FetchRow();
+                                $row_deaths_male = $result_deaths_male->FetchRow();
+                                $row_deaths_female = $result_deaths_female->FetchRow();
 
-                                        $row_newp_male = $result_newp_male->FetchRow();
-                                        $row_newp_female = $result_newp_female->FetchRow();
+                                $row_newp_male = $result_newp_male->FetchRow();
+                                $row_newp_female = $result_newp_female->FetchRow();
 
-                                        $row_new_case_male = $result_new_case_male->FetchRow();
-                                        $row_new_case_female = $result_new_case_female->FetchRow();
+                                $row_new_case_male = $result_new_case_male->FetchRow();
+                                $row_new_case_female = $result_new_case_female->FetchRow();
 
-                                        $row_revisit_male = $result_revisit_male->FetchRow();
-                                        $row_revisit_female = $result_revisit_female->FetchRow();
+                                $row_revisit_male = $result_revisit_male->FetchRow();
+                                $row_revisit_female = $result_revisit_female->FetchRow();
 
-                                        $total_cases_male_female = $row_cases_male['total_male'] + $row_cases_female['total_female'];
-                                        $total_deaths_male_female = $row_deaths_male['total_male'] + $row_deaths_female['total_female'];
-                                        $total_newp_male_female = $row_newp_male['total_male'] + $row_newp_female['total_female'];
-                                        $total_new_case_male_female = $row_new_case_male['total_male'] + $row_new_case_female['total_female'];
-                                        $total_revisit_male_female = $row_revisit_male['total_male'] + $row_revisit_female['total_female'];
+                                $total_cases_male_female = $row_cases_male['total_male'] + $row_cases_female['total_female'];
+                                $total_deaths_male_female = $row_deaths_male['total_male'] + $row_deaths_female['total_female'];
+                                $total_newp_male_female = $row_newp_male['total_male'] + $row_newp_female['total_female'];
+                                $total_new_case_male_female = $row_new_case_male['total_male'] + $row_new_case_female['total_female'];
+                                $total_revisit_male_female = $row_revisit_male['total_male'] + $row_revisit_female['total_female'];
 
-                                        $TABLE2.='<TD BGCOLOR=#99CCFF>' . $row_cases_male['total_male'] . '</TD><TD BGCOLOR=#99CCFF>' . $row_cases_female['total_female'] . '</TD><TD BGCOLOR=#99CCFF>' . $total_cases_male_female . '</TD>
+                                $TABLE2.='<TD BGCOLOR=#99CCFF>' . $row_cases_male['total_male'] . '</TD><TD BGCOLOR=#99CCFF>' . $row_cases_female['total_female'] . '</TD><TD BGCOLOR=#99CCFF>' . $total_cases_male_female . '</TD>
         <TD>' . $row_deaths_male['total_male'] . '</TD><TD>' . $row_deaths_female['total_female'] . '</TD><TD>' . $total_deaths_male_female . '</TD><TD BGCOLOR=#99CCFF>' . $row_newp_male['total_male'] . '</TD><TD BGCOLOR=#99CCFF>' . $row_newp_female['total_female'] . '</TD><TD BGCOLOR=#99CCFF>' . $total_newp_male_female . '</TD><TD>' . $row_new_case_male['total_male'] . '</TD><TD>' . $row_new_case_female['total_female'] . '</TD><TD>' . $total_new_case_male_female . '</TD><TD BGCOLOR=#99CCFF>' . $row_revisit_male['total_male'] . '</TD><TD BGCOLOR=#99CCFF>' . $row_revisit_female['total_female'] . '</TD><TD BGCOLOR=#99CCFF>' . $total_revisit_male_female . '</TD>';
 
 
-                                        fputcsv($filename_mtuha, array($row_cases_male['total_male'], $row_cases_female['total_female'], $total_cases_male_female, $row_deaths_male['total_male'], $row_deaths_female['total_female'], $total_deaths_male_female, $row_newp_male['total_male'], $row_newp_female['total_female'], $total_newp_male_female, $row_new_case_male['total_male'], $row_new_case_female['total_female'], $total_new_case_male_female, $row_revisit_male['total_male'], $row_revisit_female['total_female'], $total_revisit_male_female));
-                                    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                    $TABLE2.='</TR>';
-                                }
-                            } else {
-                                echo $message;
+                                fputcsv($filename_mtuha, array($row_cases_male['total_male'], $row_cases_female['total_female'], $total_cases_male_female, $row_deaths_male['total_male'], $row_deaths_female['total_female'], $total_deaths_male_female, $row_newp_male['total_male'], $row_newp_female['total_female'], $total_newp_male_female, $row_new_case_male['total_male'], $row_new_case_female['total_female'], $total_new_case_male_female, $row_revisit_male['total_male'], $row_revisit_female['total_female'], $total_revisit_male_female));
                             }
-                        }//end admission_id validation
-                    }//end date validation
-                }//end show
-                ?>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                            $TABLE2.='</TR>';
+                        }
+                    } else {
+                        echo $message;
+                    }
+                }//end admission_id validation
+            }//end date validation
+        }//end show
+        ?>
         <form name="form1" method="post" action="" onsubmit="return inputvalue()">
             <table width="100%" border="0" align="center">
                 <tr>
@@ -7432,13 +7622,13 @@ paramater_name as id
                             <img <?php echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle'); ?>></a>
 
 
-        <?php echo $LDDateTo; ?>
+                        <?php echo $LDDateTo; ?>
                         <input name="date_to" type="text" size=10 maxlength=10 value="<?php echo $_POST['date_to'] ?>" >
                         <a href="javascript:show_calendar('form1.date_to','<?php echo $date_format ?>')">
                             <img <?php echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle'); ?>></a>
                         <font size=1>[dd/mm/yyyy]
 
-        <?php echo $companies; ?>  
+                        <?php echo $companies; ?>  
                         <select name="admission_id" id="admission_id" onChange="javascript:popdepts()">
                             <OPTION selected value="all_opd_ipd" >All</OPTION>
                             <OPTION value="2">Outpatient</OPTION>
@@ -7457,41 +7647,41 @@ paramater_name as id
             </table>
 
 
-        <?php
-        $TABLE = '<TABLE BORDER=0 CELLPADDING=4 class="report">';
-        $TABLE.="<input type=\"hidden\" name=\"blocks\" id=\"blocks\" value=\"$nr\">";
-        $TABLE.="<tr bgcolor='#cccccc'><td>Date:</td><td colspan=2>From:" . $_POST['date_from'] . " TO: " . $_POST['date_to'] . "</td><td colspan=6>Health Fund:" . $health_fund . "</td><td colspan=8>Dept_ward:" . $ward_dept_name . "</td></tr>";
+            <?php
+            $TABLE = '<TABLE BORDER=0 CELLPADDING=4 class="report">';
+            $TABLE.="<input type=\"hidden\" name=\"blocks\" id=\"blocks\" value=\"$nr\">";
+            $TABLE.="<tr bgcolor='#cccccc'><td>Date:</td><td colspan=2>From:" . $_POST['date_from'] . " TO: " . $_POST['date_to'] . "</td><td colspan=6>Health Fund:" . $health_fund . "</td><td colspan=8>Dept_ward:" . $ward_dept_name . "</td></tr>";
 
 
-        //for($k=1; $k<=3; $k++){
-        $TABLE.='<TR><td></td><td></td>';
-        for ($i = 1; $i <= $nr; $i++) {
+            //for($k=1; $k<=3; $k++){
+            $TABLE.='<TR><td></td><td></td>';
+            for ($i = 1; $i <= $nr; $i++) {
 
-            $start = $_POST['start' . $i];
-            $end = $_POST['end' . $i];
+                $start = $_POST['start' . $i];
+                $end = $_POST['end' . $i];
 
-            $TABLE.="<TH COLSPAN=15 >AGE: FROM<input size=\"3\" type=\"text\" name=\"start$i\" id=\"start$i\"  value=\"$start\"   >TO<input size=\"3\" type=\"text\" name=\"end$i\" id=\"end$i\" value=\"$end\" onchange=\"ValidateAge($i)\" ></TH>";
-        }
-        $TABLE.='</TR><TR><td></td><td></td>';
-        for ($i = 1; $i <= $nr; $i++) {
-            $TABLE.='<TD colspan=3 BGCOLOR=#99CCFF>CASES</TD><TD colspan=3>DEATHS</TD><TD colspan=3 BGCOLOR=#99CCFF>NEW PATIENT</TD><TD colspan=3>NEW CASE</TD><TD colspan=3 BGCOLOR=#99CCFF>REVISIT</TD>';
-        }
-        $TABLE.='</TR><TR><td>Diagnosis Name</td><td>ICD10 Code</td>';
-        for ($i = 1; $i <= $nr; $i++) {
-            $TABLE.='<TD BGCOLOR=#99CCFF>M</TD><TD BGCOLOR=#99CCFF>F</TD><TD BGCOLOR=#99CCFF>TOTAL</TD>
+                $TABLE.="<TH COLSPAN=15 >AGE: FROM<input size=\"3\" type=\"text\" name=\"start$i\" id=\"start$i\"  value=\"$start\"   >TO<input size=\"3\" type=\"text\" name=\"end$i\" id=\"end$i\" value=\"$end\" onchange=\"ValidateAge($i)\" ></TH>";
+            }
+            $TABLE.='</TR><TR><td></td><td></td>';
+            for ($i = 1; $i <= $nr; $i++) {
+                $TABLE.='<TD colspan=3 BGCOLOR=#99CCFF>CASES</TD><TD colspan=3>DEATHS</TD><TD colspan=3 BGCOLOR=#99CCFF>NEW PATIENT</TD><TD colspan=3>NEW CASE</TD><TD colspan=3 BGCOLOR=#99CCFF>REVISIT</TD>';
+            }
+            $TABLE.='</TR><TR><td>Diagnosis Name</td><td>ICD10 Code</td>';
+            for ($i = 1; $i <= $nr; $i++) {
+                $TABLE.='<TD BGCOLOR=#99CCFF>M</TD><TD BGCOLOR=#99CCFF>F</TD><TD BGCOLOR=#99CCFF>TOTAL</TD>
         <TD>M</TD><TD>F</TD><TD>TOTAL</TD><TD BGCOLOR=#99CCFF>M</TD><TD BGCOLOR=#99CCFF>F</TD><TD BGCOLOR=#99CCFF>TOTAL</TD><TD>M</TD><TD>F</TD><TD>TOTAL</TD><TD BGCOLOR=#99CCFF>M</TD><TD BGCOLOR=#99CCFF>F</TD><TD BGCOLOR=#99CCFF>TOTAL</TD>';
-        }
+            }
 
-        $TABLE.='</TR>';
+            $TABLE.='</TR>';
 
-        //}
+            //}
 
 
 
-        $TABLE.=$TABLE2;
-        $TABLE.='</table>';
-        echo $TABLE;
-        ?>
+            $TABLE.=$TABLE2;
+            $TABLE.='</table>';
+            echo $TABLE;
+            ?>
             <table>
                 <tr>
                     <td><a href="./gui/downloads/mtuha_detailed.csv"><img border=0 src="../../gui/img/common/default/savedisk.gif"></a></td>
@@ -7499,156 +7689,156 @@ paramater_name as id
             </table>
 
         </form>		
-                        <?php
+        <?php
 //*******************************************************************************************************************
 
 
-                        fclose($filename_mtuha);
-                    }
+        fclose($filename_mtuha);
+    }
 
 //end mtuha diagnosis blocks  
 
-                    function lab_detailed($nr = '') {
-                        /*
-                          This function was written by Israel Pascal
-                          ELCT e-Health Unit
-                          Arusha Tanzania
-                          9th DEC 2015
-                          israel.pascal10@gmail.com
-                          israel@elct.or.tz
-                          +255767809660
-                         */
-                        global $db, $LDDateFrom, $LDDateTo, $root_path, $LDShow, $date_format;
+    function lab_detailed($nr = '') {
+        /*
+          This function was written by Israel Pascal
+          ELCT e-Health Unit
+          Arusha Tanzania
+          9th DEC 2015
+          israel.pascal10@gmail.com
+          israel@elct.or.tz
+          +255767809660
+         */
+        global $db, $LDDateFrom, $LDDateTo, $root_path, $LDShow, $date_format;
 
 
 
 
-                        if (isset($_POST['show']) || !empty($_POST['show'])) {
+        if (isset($_POST['show']) || !empty($_POST['show'])) {
 
 
-                            if ($_POST['date_from'] <= $_POST['date_to']) {
-                                if (isset($_POST['admission_id']) || !empty($_POST['admission_id'])) {
-                                    if ($_POST['admission_id'] == 'all_opd_ipd') {
-                                        //all opd and ipd 
-                                        $dept_ward = '';
-                                        $in_out_p = 'IN AND OUT PATIENT';
-                                    } else {
-                                        if ($_POST['admission_id'] == 1) {
-                                            //ipd
-                                            switch ($_POST['current_ward_nr']) {
-                                                case 'all_ipd':
-                                                    $dept_ward = 'AND current_ward_nr>0';
-                                                    $in_out_p = 'ALL INPATIENT';
-                                                    break;
-                                                default:
-                                                    $dept_ward = 'AND current_ward_nr=' . $_POST['current_ward_nr'];
-                                                    $sql_ward_name = "SELECT name FROM care_ward WHERE nr=" . $_POST['current_ward_nr'];
-                                                    $result_ward_name = $db->Execute($sql_ward_name);
-                                                    $in_out_name = $result_ward_name->FetchRow();
-                                                    $in_out_p = $in_out_name['name'];
-                                            }
-                                        } else {
-                                            //opd
-                                            switch ($_POST['dept_nr']) {
-                                                case 'all_opd':
-                                                    $dept_ward = 'AND current_dept_nr>0';
-                                                    $in_out_p = "ALL OUT PATIENT";
-                                                    break;
-                                                default:
-                                                    $dept_ward = 'AND current_dept_nr=' . $_POST['dept_nr'];
-                                                    $sql_dept_name = "SELECT name_formal FROM care_department WHERE nr=" . $_POST['dept_nr'];
-                                                    $result_dept_name = $db->Execute($sql_dept_name);
-                                                    $dept_name = $result_dept_name->FetchRow();
-                                                    $in_out_p = $dept_name['name_formal'];
-                                            }
-                                        }
-                                    }//end dept ward validation
-                                    $error = false;
-                                    for ($i = 1; $i <= $_POST['blocks']; $i++) {
+            if ($_POST['date_from'] <= $_POST['date_to']) {
+                if (isset($_POST['admission_id']) || !empty($_POST['admission_id'])) {
+                    if ($_POST['admission_id'] == 'all_opd_ipd') {
+                        //all opd and ipd 
+                        $dept_ward = '';
+                        $in_out_p = 'IN AND OUT PATIENT';
+                    } else {
+                        if ($_POST['admission_id'] == 1) {
+                            //ipd
+                            switch ($_POST['current_ward_nr']) {
+                                case 'all_ipd':
+                                    $dept_ward = 'AND current_ward_nr>0';
+                                    $in_out_p = 'ALL INPATIENT';
+                                    break;
+                                default:
+                                    $dept_ward = 'AND current_ward_nr=' . $_POST['current_ward_nr'];
+                                    $sql_ward_name = "SELECT name FROM care_ward WHERE nr=" . $_POST['current_ward_nr'];
+                                    $result_ward_name = $db->Execute($sql_ward_name);
+                                    $in_out_name = $result_ward_name->FetchRow();
+                                    $in_out_p = $in_out_name['name'];
+                            }
+                        } else {
+                            //opd
+                            switch ($_POST['dept_nr']) {
+                                case 'all_opd':
+                                    $dept_ward = 'AND current_dept_nr>0';
+                                    $in_out_p = "ALL OUT PATIENT";
+                                    break;
+                                default:
+                                    $dept_ward = 'AND current_dept_nr=' . $_POST['dept_nr'];
+                                    $sql_dept_name = "SELECT name_formal FROM care_department WHERE nr=" . $_POST['dept_nr'];
+                                    $result_dept_name = $db->Execute($sql_dept_name);
+                                    $dept_name = $result_dept_name->FetchRow();
+                                    $in_out_p = $dept_name['name_formal'];
+                            }
+                        }
+                    }//end dept ward validation
+                    $error = false;
+                    for ($i = 1; $i <= $_POST['blocks']; $i++) {
 
-                                        if ($_POST['start' . $i] > $_POST['end' . $i] || $_POST['start' . $i] == '' || $_POST['end' . $i] == '') {
-                                            $error = true;
-                                            $message = "ERROR! MAKE SURE INPUT BOX ARE NOT EMPTY AND START AGE IS LESS OR EQUAL TO END AGE";
-                                        }
-                                    }//end for loop
-                                    if (!$error) {
-                                        //query database
-                                        $DateFromArray = explode('/', $_POST['date_from']);
-                                        $DateToArray = explode('/', $_POST['date_to']);
-                                        $DateStampFrom = mktime(00, 00, 00, $DateFromArray[1], $DateFromArray[0], $DateFromArray[2]);
-                                        $DateStampTo = mktime(23, 59, 59, $DateToArray[1], $DateToArray[0], $DateToArray[2]);
-                                        $mysql_date_from = date('Y-m-d H:i:s', $DateStampFrom);
-                                        $mysql_date_to = date('Y-m-d H:i:s', $DateStampTo);
+                        if ($_POST['start' . $i] > $_POST['end' . $i] || $_POST['start' . $i] == '' || $_POST['end' . $i] == '') {
+                            $error = true;
+                            $message = "ERROR! MAKE SURE INPUT BOX ARE NOT EMPTY AND START AGE IS LESS OR EQUAL TO END AGE";
+                        }
+                    }//end for loop
+                    if (!$error) {
+                        //query database
+                        $DateFromArray = explode('/', $_POST['date_from']);
+                        $DateToArray = explode('/', $_POST['date_to']);
+                        $DateStampFrom = mktime(00, 00, 00, $DateFromArray[1], $DateFromArray[0], $DateFromArray[2]);
+                        $DateStampTo = mktime(23, 59, 59, $DateToArray[1], $DateToArray[0], $DateToArray[2]);
+                        $mysql_date_from = date('Y-m-d H:i:s', $DateStampFrom);
+                        $mysql_date_to = date('Y-m-d H:i:s', $DateStampTo);
 
 
-                                        $sql_lab = "CREATE TEMPORARY TABLE IF NOT EXISTS AllLabTmp AS
+                        $sql_lab = "CREATE TEMPORARY TABLE IF NOT EXISTS AllLabTmp AS
 							             (SELECT distinct chemsub.`paramater_name`,CASE WHEN chemsub.`parameter_value` LIKE '%pos%' THEN 'positive' ELSE 'negative' END AS result,chemsub.create_time, cp.selian_pid, chemsub.`encounter_nr`,cp.`sex`, DATE_FORMAT(NOW(),'%Y')-DATE_FORMAT(cp.date_birth,'%Y') AS age
 							                FROM `care_test_findings_chemlabor_sub` AS chemsub INNER JOIN care_encounter AS ce ON ce.encounter_nr=chemsub.encounter_nr \n"
-                                                . "INNER JOIN 
+                                . "INNER JOIN 
                                     care_person AS cp ON cp.pid=ce.pid WHERE chemsub.`parameter_value` REGEXP 'pos|neg' AND chemsub.create_time BETWEEN '" . $mysql_date_from . "' AND '" . $mysql_date_to . "'" . $dept_ward . ")";
 
-                                        //echo $sql_lab;              							   
+                        //echo $sql_lab;              							   
 
-                                        $result_lab = $db->Execute($sql_lab);
-                                        $sql_lab_group = "SELECT paramater_name, result FROM AllLabTmp GROUP BY paramater_name ";
+                        $result_lab = $db->Execute($sql_lab);
+                        $sql_lab_group = "SELECT paramater_name, result FROM AllLabTmp GROUP BY paramater_name ";
 
-                                        $result_lab_group = $db->Execute($sql_lab_group);
+                        $result_lab_group = $db->Execute($sql_lab_group);
 
-                                        $TABLE2 = '';
-                                        $TABLE2.='<TR>';
-
-
-                                        while ($rows_lab_group = $result_lab_group->FetchRow()) {
-
-                                            $total_male_female = 0;
+                        $TABLE2 = '';
+                        $TABLE2.='<TR>';
 
 
+                        while ($rows_lab_group = $result_lab_group->FetchRow()) {
 
-                                            for ($j = 1; $j <= 2; $j++) {
-                                                if ($j == 1) {
-
-                                                    $test = 'Positive';
-                                                } else {
-
-                                                    $test = 'Negative';
-                                                }
-                                                $firstColor = "#ffffff"; // White
-                                                $secondColor = "#cccccc"; // Gray
-                                                $colorThisTime = ($j % 2 == 0) ? $firstColor : $secondColor;
-                                                $TABLE2.='<TR bgcolor="' . $colorThisTime . '"><TD>' . $rows_lab_group['paramater_name'] . '</TD><TD>' . $test . '</TD>';
-                                                for ($i = 1; $i <= $nr; $i++) {
-                                                    //MALE
-                                                    $sql_male = "SELECT COUNT(*) AS total_male FROM AllLabTmp WHERE age BETWEEN '" . $_POST['start' . $i] . "' AND '" . $_POST['end' . $i] . "' AND paramater_name='" . $rows_lab_group['paramater_name'] . "' AND sex='m' AND result='" . $test . "'";
-                                                    //FEMALE
-                                                    $sql_female = "SELECT COUNT(*) AS total_female FROM AllLabTmp WHERE age BETWEEN '" . $_POST['start' . $i] . "' AND '" . $_POST['end' . $i] . "' AND paramater_name='" . $rows_lab_group['paramater_name'] . "' AND sex='f' AND result='" . $test . "'";
-
-                                                    $result_male = $db->Execute($sql_male);
-                                                    $result_female = $db->Execute($sql_female);
-
-                                                    $row_total_male = $result_male->FetchRow();
-                                                    $row_total_female = $result_female->FetchRow();
-
-                                                    $TABLE2.='<TD>' . $row_total_male['total_male'] . '</TD>';
-                                                    $TABLE2.='<TD>' . $row_total_female['total_female'] . '</TD>';
-                                                    $total_male_female = $row_total_male['total_male'] + $row_total_female['total_female'];
-                                                    $TABLE2.='<TD>' . $total_male_female . '</TD>';
-                                                }//end for loop
-                                            }//j  loop
+                            $total_male_female = 0;
 
 
+
+                            for ($j = 1; $j <= 2; $j++) {
+                                if ($j == 1) {
+
+                                    $test = 'Positive';
+                                } else {
+
+                                    $test = 'Negative';
+                                }
+                                $firstColor = "#ffffff"; // White
+                                $secondColor = "#cccccc"; // Gray
+                                $colorThisTime = ($j % 2 == 0) ? $firstColor : $secondColor;
+                                $TABLE2.='<TR bgcolor="' . $colorThisTime . '"><TD>' . $rows_lab_group['paramater_name'] . '</TD><TD>' . $test . '</TD>';
+                                for ($i = 1; $i <= $nr; $i++) {
+                                    //MALE
+                                    $sql_male = "SELECT COUNT(*) AS total_male FROM AllLabTmp WHERE age BETWEEN '" . $_POST['start' . $i] . "' AND '" . $_POST['end' . $i] . "' AND paramater_name='" . $rows_lab_group['paramater_name'] . "' AND sex='m' AND result='" . $test . "'";
+                                    //FEMALE
+                                    $sql_female = "SELECT COUNT(*) AS total_female FROM AllLabTmp WHERE age BETWEEN '" . $_POST['start' . $i] . "' AND '" . $_POST['end' . $i] . "' AND paramater_name='" . $rows_lab_group['paramater_name'] . "' AND sex='f' AND result='" . $test . "'";
+
+                                    $result_male = $db->Execute($sql_male);
+                                    $result_female = $db->Execute($sql_female);
+
+                                    $row_total_male = $result_male->FetchRow();
+                                    $row_total_female = $result_female->FetchRow();
+
+                                    $TABLE2.='<TD>' . $row_total_male['total_male'] . '</TD>';
+                                    $TABLE2.='<TD>' . $row_total_female['total_female'] . '</TD>';
+                                    $total_male_female = $row_total_male['total_male'] + $row_total_female['total_female'];
+                                    $TABLE2.='<TD>' . $total_male_female . '</TD>';
+                                }//end for loop
+                            }//j  loop
 
 
 
 
-                                            $TABLE2.='</TR>';
-                                        }
-                                    } else {
-                                        echo $message;
-                                    }
-                                }//end admission_id validation
-                            }//end date validation
-                        }//end show
-                        ?>
+
+
+                            $TABLE2.='</TR>';
+                        }
+                    } else {
+                        echo $message;
+                    }
+                }//end admission_id validation
+            }//end date validation
+        }//end show
+        ?>
         <form name="form1" method="post" action="" onsubmit="return inputvalue()">
             <table width="100%" border="0" align="center">
                 <tr>
@@ -7657,7 +7847,7 @@ paramater_name as id
                             <img <?php echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle'); ?>></a>
 
 
-        <?php echo $LDDateTo; ?>
+                        <?php echo $LDDateTo; ?>
                         <input name="date_to" type="text" size=10 maxlength=10 value="<?php echo $_POST['date_to'] ?>" >
                         <a href="javascript:show_calendar('form1.date_to','<?php echo $date_format ?>')">
                             <img <?php echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle'); ?>></a>
@@ -7681,40 +7871,40 @@ paramater_name as id
             </table>
 
 
-        <?php
-        $TABLE = '<TABLE BORDER=1 CELLPADDING=4 class="report">';
-        $TABLE.="<input type=\"hidden\" name=\"blocks\" id=\"blocks\" value=\"$nr\">";
+            <?php
+            $TABLE = '<TABLE BORDER=1 CELLPADDING=4 class="report">';
+            $TABLE.="<input type=\"hidden\" name=\"blocks\" id=\"blocks\" value=\"$nr\">";
 
-        //for($k=1; $k<=3; $k++){
-        $TABLE.='<TR><td colspan="2">AGE GROUP</td>';
-        for ($i = 1; $i <= $nr; $i++) {
+            //for($k=1; $k<=3; $k++){
+            $TABLE.='<TR><td colspan="2">AGE GROUP</td>';
+            for ($i = 1; $i <= $nr; $i++) {
 
-            $start = $_POST['start' . $i];
-            $end = $_POST['end' . $i];
-            $firstColor = "#ffffff"; // White
-            $secondColor = "#cccccc"; // Gray
-            $colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;
-            $TABLE.="<TH bgcolor=" . $colorThisTime . " COLSPAN=3><input size=\"3\" type=\"text\" name=\"start$i\" id=\"start$i\"  value=\"$start\"   ><input size=\"3\" type=\"text\" name=\"end$i\" id=\"end$i\" value=\"$end\" onchange=\"ValidateAge($i)\" ></TH>";
-        }
-        $TABLE.='</TR><TR bgcolor="lightblue"><td>Lab test</td><td>Result</td>';
+                $start = $_POST['start' . $i];
+                $end = $_POST['end' . $i];
+                $firstColor = "#ffffff"; // White
+                $secondColor = "#cccccc"; // Gray
+                $colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;
+                $TABLE.="<TH bgcolor=" . $colorThisTime . " COLSPAN=3><input size=\"3\" type=\"text\" name=\"start$i\" id=\"start$i\"  value=\"$start\"   ><input size=\"3\" type=\"text\" name=\"end$i\" id=\"end$i\" value=\"$end\" onchange=\"ValidateAge($i)\" ></TH>";
+            }
+            $TABLE.='</TR><TR bgcolor="lightblue"><td>Lab test</td><td>Result</td>';
 
-        for ($i = 1; $i <= $nr; $i++) {
-            $firstColor = "#ffffff"; // White
-            $secondColor = "#cccccc"; // Gray
-            //$colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;		
-            $TABLE.='<TD BGCOLOR="lightblue">M</TD><TD BGCOLOR="lightblue">F</TD><TD BGCOLOR="lightblue">TOTAL</TD>';
-        }
+            for ($i = 1; $i <= $nr; $i++) {
+                $firstColor = "#ffffff"; // White
+                $secondColor = "#cccccc"; // Gray
+                //$colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;		
+                $TABLE.='<TD BGCOLOR="lightblue">M</TD><TD BGCOLOR="lightblue">F</TD><TD BGCOLOR="lightblue">TOTAL</TD>';
+            }
 
-        $TABLE.='</TR>';
+            $TABLE.='</TR>';
 
-        //}
+            //}
 
 
 
-        $TABLE.=$TABLE2;
-        $TABLE.='</table>';
-        echo $TABLE;
-        ?>
+            $TABLE.=$TABLE2;
+            $TABLE.='</table>';
+            echo $TABLE;
+            ?>
             <table>
                 <tr>
                     <td><a href="./gui/downloads/mtuha_detailed.csv"><img border=0 src="../../gui/img/common/default/savedisk.gif"></a></td>
@@ -7871,7 +8061,7 @@ paramater_name as id
                             <img <?php echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle'); ?>></a>
 
 
-        <?php echo $LDDateTo; ?>
+                        <?php echo $LDDateTo; ?>
                         <input name="date_to" type="text" size=10 maxlength=10 value="<?php echo $_POST['date_to'] ?>" >
                         <a href="javascript:show_calendar('form1.date_to','<?php echo $date_format ?>')">
                             <img <?php echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle'); ?>></a>
@@ -7896,40 +8086,40 @@ paramater_name as id
             </table>
 
 
-        <?php
-        $TABLE = '<TABLE BORDER=1 CELLPADDING=4 class=report>';
-        $TABLE.="<input type=\"hidden\" name=\"blocks\" id=\"blocks\" value=\"$nr\">";
+            <?php
+            $TABLE = '<TABLE BORDER=1 CELLPADDING=4 class=report>';
+            $TABLE.="<input type=\"hidden\" name=\"blocks\" id=\"blocks\" value=\"$nr\">";
 
-        //for($k=1; $k<=3; $k++){
-        $TABLE.='<TR><td colspan="2">AGE GROUP</td>';
-        for ($i = 1; $i <= $nr; $i++) {
+            //for($k=1; $k<=3; $k++){
+            $TABLE.='<TR><td colspan="2">AGE GROUP</td>';
+            for ($i = 1; $i <= $nr; $i++) {
 
-            $start = $_POST['start' . $i];
-            $end = $_POST['end' . $i];
-            $firstColor = "#ffffff"; // White
-            $secondColor = "#cccccc"; // Gray
-            $colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;
-            $TABLE.="<TH bgcolor=" . $colorThisTime . " COLSPAN=3><input size=\"3\" type=\"text\" name=\"start$i\" id=\"start$i\" placeholder=\"From\"  value=\"$start\"   ><input size=\"3\" type=\"text\" name=\"end$i\" id=\"end$i\" value=\"$end\" placeholder=\"To\" onchange=\"ValidateAge($i)\" ></TH>";
-        }
-        $TABLE.='</TR><TR bgcolor="lightblue"><td>Lab test</td><td>Result</td>';
+                $start = $_POST['start' . $i];
+                $end = $_POST['end' . $i];
+                $firstColor = "#ffffff"; // White
+                $secondColor = "#cccccc"; // Gray
+                $colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;
+                $TABLE.="<TH bgcolor=" . $colorThisTime . " COLSPAN=3><input size=\"3\" type=\"text\" name=\"start$i\" id=\"start$i\" placeholder=\"From\"  value=\"$start\"   ><input size=\"3\" type=\"text\" name=\"end$i\" id=\"end$i\" value=\"$end\" placeholder=\"To\" onchange=\"ValidateAge($i)\" ></TH>";
+            }
+            $TABLE.='</TR><TR bgcolor="lightblue"><td>Lab test</td><td>Result</td>';
 
-        for ($i = 1; $i <= $nr; $i++) {
-            $firstColor = "#ffffff"; // White
-            $secondColor = "#cccccc"; // Gray
-            //$colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;		
-            $TABLE.='<TD BGCOLOR="lightblue">M</TD><TD BGCOLOR="lightblue">F</TD><TD BGCOLOR="lightblue">TOTAL</TD>';
-        }
+            for ($i = 1; $i <= $nr; $i++) {
+                $firstColor = "#ffffff"; // White
+                $secondColor = "#cccccc"; // Gray
+                //$colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;		
+                $TABLE.='<TD BGCOLOR="lightblue">M</TD><TD BGCOLOR="lightblue">F</TD><TD BGCOLOR="lightblue">TOTAL</TD>';
+            }
 
-        $TABLE.='</TR>';
+            $TABLE.='</TR>';
 
-        //}
+            //}
 
 
 
-        $TABLE.=$TABLE2;
-        $TABLE.='</table>';
-        echo $TABLE;
-        ?>
+            $TABLE.=$TABLE2;
+            $TABLE.='</table>';
+            echo $TABLE;
+            ?>
             <table>
                 <tr>
                     <td><a href="./gui/downloads/mtuha_detailed.csv"><img border=0 src="../../gui/img/common/default/savedisk.gif"></a></td>
@@ -8132,7 +8322,7 @@ paramater_name as id
                             <img <?php echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle'); ?>></a>
 
 
-        <?php echo $LDDateTo; ?>
+                        <?php echo $LDDateTo; ?>
                         <input name="date_to" type="text" size=10 maxlength=10 value="<?php echo $_POST['date_to'] ?>" >
                         <a href="javascript:show_calendar('form1.date_to','<?php echo $date_format ?>')">
                             <img <?php echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle'); ?>></a>
@@ -8146,7 +8336,7 @@ paramater_name as id
                             <input type="submit" name="show" value="<?php echo $LDShow; ?>">
                         </select>
                         <div id="dept">all_opd_ipd</div>
-        <?php echo $companies; ?>
+                        <?php echo $companies; ?>
 
 
 
@@ -8157,50 +8347,50 @@ paramater_name as id
             </table>
 
 
-        <?php
-        $TABLE = '<TABLE BORDER=1 CELLPADDING=4>';
-        $TABLE.="<input type=\"hidden\" name=\"blocks\" id=\"blocks\" value=\"$nr\">";
+            <?php
+            $TABLE = '<TABLE BORDER=1 CELLPADDING=4>';
+            $TABLE.="<input type=\"hidden\" name=\"blocks\" id=\"blocks\" value=\"$nr\">";
 
-        //for($k=1; $k<=3; $k++){
-        $TABLE.='<TR><td colspan="2">AGE GROUP <img src="../../gui/img/common/default/arrow.gif" border=0 width="15" height="15"></td>';
-        for ($i = 1; $i <= $nr; $i++) {
+            //for($k=1; $k<=3; $k++){
+            $TABLE.='<TR><td colspan="2">AGE GROUP <img src="../../gui/img/common/default/arrow.gif" border=0 width="15" height="15"></td>';
+            for ($i = 1; $i <= $nr; $i++) {
 
-            $start = $_POST['start' . $i];
-            $end = $_POST['end' . $i];
-            $firstColor = "#ffffff"; // White
-            $secondColor = "#cccccc"; // Gray
-            $colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;
-            $TABLE.="<TH bgcolor=" . $colorThisTime . " COLSPAN=6><input size=\"3\" type=\"text\" name=\"start$i\" id=\"start$i\"  value=\"$start\"   ><input size=\"3\" type=\"text\" name=\"end$i\" id=\"end$i\" value=\"$end\" onchange=\"ValidateAge($i)\" ></TH>";
-        }
+                $start = $_POST['start' . $i];
+                $end = $_POST['end' . $i];
+                $firstColor = "#ffffff"; // White
+                $secondColor = "#cccccc"; // Gray
+                $colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;
+                $TABLE.="<TH bgcolor=" . $colorThisTime . " COLSPAN=6><input size=\"3\" type=\"text\" name=\"start$i\" id=\"start$i\"  value=\"$start\"   ><input size=\"3\" type=\"text\" name=\"end$i\" id=\"end$i\" value=\"$end\" onchange=\"ValidateAge($i)\" ></TH>";
+            }
 
-        $TABLE.='</TR><TR><td colspan="2" >VISIT TYPE <img src="../../gui/img/common/default/arrow.gif" border=0 width="15" height="15"></td>';
+            $TABLE.='</TR><TR><td colspan="2" >VISIT TYPE <img src="../../gui/img/common/default/arrow.gif" border=0 width="15" height="15"></td>';
 
-        for ($i = 1; $i <= $nr; $i++) {
-            $firstColor = "#ffffff"; // White
-            $secondColor = "#cccccc"; // Gray
-            $colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;
-            $TABLE.="<TD bgcolor=" . $colorThisTime . " COLSPAN=3>NEW</TD><TD bgcolor=" . $colorThisTime . " COLSPAN=3>RETURN</TD>";
-        }
+            for ($i = 1; $i <= $nr; $i++) {
+                $firstColor = "#ffffff"; // White
+                $secondColor = "#cccccc"; // Gray
+                $colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;
+                $TABLE.="<TD bgcolor=" . $colorThisTime . " COLSPAN=3>NEW</TD><TD bgcolor=" . $colorThisTime . " COLSPAN=3>RETURN</TD>";
+            }
 
-        $TABLE.='</TR><TR ><td colspan="2">DATE <img src="../../gui/img/common/default/arrow_red_dwn_sm.gif" border=0 width="15" height="15"></td>';
+            $TABLE.='</TR><TR ><td colspan="2">DATE <img src="../../gui/img/common/default/arrow_red_dwn_sm.gif" border=0 width="15" height="15"></td>';
 
-        for ($i = 1; $i <= $nr; $i++) {
-            $firstColor = "#ffffff"; // White
-            $secondColor = "#cccccc"; // Gray
-            $colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;
-            $TABLE.="<TD bgcolor=" . $colorThisTime . ">M</TD><TD bgcolor=" . $colorThisTime . ">F</TD><TD bgcolor=" . $colorThisTime . ">TOTAL</TD><TD bgcolor=" . $colorThisTime . ">M</TD><TD bgcolor=" . $colorThisTime . ">F</TD><TD bgcolor=" . $colorThisTime . ">TOTAL</TD>";
-        }
+            for ($i = 1; $i <= $nr; $i++) {
+                $firstColor = "#ffffff"; // White
+                $secondColor = "#cccccc"; // Gray
+                $colorThisTime = ($i % 2 == 0) ? $firstColor : $secondColor;
+                $TABLE.="<TD bgcolor=" . $colorThisTime . ">M</TD><TD bgcolor=" . $colorThisTime . ">F</TD><TD bgcolor=" . $colorThisTime . ">TOTAL</TD><TD bgcolor=" . $colorThisTime . ">M</TD><TD bgcolor=" . $colorThisTime . ">F</TD><TD bgcolor=" . $colorThisTime . ">TOTAL</TD>";
+            }
 
-        $TABLE.='</TR>';
+            $TABLE.='</TR>';
 
-        //}
+            //}
 
 
 
-        $TABLE.=$TABLE2;
-        $TABLE.='</table>';
-        echo $TABLE;
-        ?>
+            $TABLE.=$TABLE2;
+            $TABLE.='</table>';
+            echo $TABLE;
+            ?>
             <table>
                 <tr>
                     <td><a href="./gui/downloads/mtuha_detailed.csv"><img border=0 src="../../gui/img/common/default/savedisk.gif"></a></td>

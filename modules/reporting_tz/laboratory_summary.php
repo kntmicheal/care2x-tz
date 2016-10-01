@@ -32,9 +32,12 @@ if (empty($_GET['printout'])) {
         $end_timeframe = mktime(0, 0, 0, $month + 1, 0, $year); // Last day of requested month			
         $admission = "0";
     } else { // month and year are given...
-        if ($debug)
+        if ($debug) {
             echo "Getting an new time range...<br>";
+        }
+//        echo $_POST['month'] . ' ' . $_POST['year'];
         $start_timeframe = mktime(0, 0, 0, $_POST['month'], 1, $_POST['year']);
+//        echo $start_timeframe;
         $end_timeframe = mktime(0, 0, 0, $_POST['month'] + 1, 0, $_POST['year']);
         $admission = $_POST['admission_id'];
     } // end of if (empty($_POST['month']) && empty($_POST['year']))

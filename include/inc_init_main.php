@@ -46,7 +46,7 @@ $key_2level = '2.48431445375E+26';
 $key_login = '1.69264361013E+27';
 
 # Main host address or domain
-$main_domain = 'c2x-training.haydom.co.tz';
+$main_domain = '';
 
 # Host address for images
 $fotoserver_ip = 'localhost';

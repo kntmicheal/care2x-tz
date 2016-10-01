@@ -16,7 +16,8 @@ echo '<html><body>'; ?>
 echo '<table width="500" border="1" cellspacing="0" cellpadding="0" align="center" ';
 
 	$rep_obj->DisplayMonthlyLabTableHead($start_timeframe,$end_timeframe,$admission);
-	$rep_obj->DisplayMonthlyLabRequestsSummary($start_timeframe,$end_timeframe,$admission);
+//	$rep_obj->DisplayMonthlyLabRequestsSummary($start_timeframe,$end_timeframe,$admission);
+        $rep_obj->DisplayMonthlyLabTestsSummary($start_timeframe,$end_timeframe,$admission);
 	
 echo '</table>';
 echo '</html></body>';
@@ -104,7 +105,7 @@ function popPic(pid,nm){
 						  <br><br><br>
                           <table width="75%" border="1" cellspacing="0" cellpadding="0" align="center" bgcolor=#ffffdd>
                           		<?php $rep_obj->DisplayMonthlyLabTableHead($start_timeframe,$end_timeframe,$admission); ?>
-						  		<?php $rep_obj->DisplayMonthlyLabRequestsSummary($start_timeframe,$end_timeframe,$admission); ?>
+						  		<?php $rep_obj->DisplayMonthlyLabTestsSummary($start_timeframe,$end_timeframe,$admission); ?>
 
                           </table>
 				</form>			  
