@@ -19,10 +19,10 @@ $hospital_logo = 'care_logo.gif ';
 $nhif_base = 'http://verification.nhif.or.tz/NHIFService';
 
 #Service username
-$nhif_user = 'aiccdev';
+$nhif_user = '';
 
 #NHIF service password
-$nhif_pwd = 'aiccdev@2014';
+$nhif_pwd = '';
 
 #WebERP REST Service Credentials
 #For use when integrating wiht webERP Restful Service
@@ -31,10 +31,10 @@ $nhif_pwd = 'aiccdev@2014';
 $weberp_base = 'http://127.0.0.1/restservice';
 
 #WebERP Service username
-$weberp_user = 'care2x';
+$weberp_user = '';
 
 #WebERP Service user password
-$weberp_pwd = 'care2x';
+$weberp_pwd = '';
 
 # First key used for simple chaining protection of scripts
 $key = '2.67452802362E+28';
