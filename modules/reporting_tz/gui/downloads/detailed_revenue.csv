@@ -1,0 +1,12 @@
+FROM:,"01-01-1970 02:00:00",TO:,"01-01-1970 02:00:00","ALL CUSTOMERS"
+"Billed Date","Admission date",Patient/ID,"Birth Date","File NR",Membership_NR,Form_NR,,Description,Category,"No.Of Items",Price,Deposit
+"PATIENTS WITH DEPOSITS"
+"PATIENTS WITH TOPUP"
+Lab,Drugs,Radio,Dental,Eye,Min.Proc,Major.proc,"Consult and services",Supplies.,"Laboratory Supplies",Other,"TOTAL EXCL. DEPOSIT ITEMS","TOTAL WITH DEPOSIT ITEMS"
+0,0,0,0,0,0,0,0,0,0,0,0,0
+"GRAND TOTAL:",0
+"MAIN SUMMARY"
+"TOTAL DEPOSIT:",0
+"TOTAL TOPUP:",0
+"TOTAL REFUND:",0
+"TOTAL SUM:",0
