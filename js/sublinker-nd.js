@@ -3,7 +3,7 @@
 /* Creation date: 24.06.01 */
 // horizontal distance from the textlink to the submenu (pixels)
 
-< !--
+//<!--
         var xdistance = 10;
 
 // vertical distance from the textlink to the submenu (pixels)

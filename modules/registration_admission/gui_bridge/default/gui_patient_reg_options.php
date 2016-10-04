@@ -158,7 +158,7 @@ function Spacer()
 			   
            <?php Spacer(); ?>
 				  
-				  <TR><td align=center><img <?php echo createComIcon($root_path,'people_search_online.gif','0','',FALSE) ?>></td>
+				  <TR><td align=center><img <?php echo createComIcon($root_path,'sheart-working.gif','0','',FALSE) ?>></td>
                 <TD vAlign=top width=150><FONT 
                   face="Verdana,Helvetica,Arial" size=2> 
 				<a href="show_weight_height.php<?php echo URL_APPEND ?>&pid=<?php echo $pid ?>&target=<?php echo $target ?>"><?php echo $LDMeasurements ?></a>

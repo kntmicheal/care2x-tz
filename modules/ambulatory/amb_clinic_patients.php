@@ -616,6 +616,8 @@ if ($rows) {
 
             $smarty->assign('sTransferIcon', '<a href="javascript:Transfer(\'' . $patient['encounter_nr'] . '\',\'\', \'' . $pid . '\')"><img ' . createComIcon($root_path, 'xchange.gif', '0', '', TRUE) . ' align="absmiddle" alt="' . $LDTransferPatient . '"></a>');
 
+            $smarty->assign('vitalSigns', '<a href="' . $root_path . 'modules/registration_admission/show_weight_height.php' . URL_APPEND . '&target=search&pid=' . $pid . '"><img ' . createComIcon($root_path, 'sheart-working.gif', '0', '', TRUE) . ' align="absmiddle" alt="' . $LDTransferPatient . '" title="Vital Signs: Click to show Vital Signs"></a>');
+
             /* MEROTECH:
               Commented out for selian town clinic by Alexander Irro
               $smarty->assign('sDischargeIcon','<a href="javascript:release(\''.$patient['encounter_nr'].'\')" title="'.$LDReleasePatient.'"><img '.createComIcon($root_path,'bestell.gif','0','',TRUE).' alt="'.$LDReleasePatient.'"></a>');

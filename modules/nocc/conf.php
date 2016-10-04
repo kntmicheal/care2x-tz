@@ -138,7 +138,7 @@ $ad = "";
 $nocc_version = '0.9.4';
 $nocc_name = 'NOCC';
 
-$_SESSION['domainnum', 'user', 'passwd', 'server', 'servtype', 'port', 'theme'];
+$_SESSION['domainnum' . 'user' . 'passwd' . 'server' . 'servtype' . 'port' . 'theme'];
 
 if (isset($domainnum)) {
     $domain = $domains[$domainnum]->domain;

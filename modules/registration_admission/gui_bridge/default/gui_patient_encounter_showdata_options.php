@@ -85,6 +85,7 @@ if ($cfg['icons'] != 'no_icon') {
     $TP_iconCrossTeen = '<img ' . createComIcon($root_path, 'bnplus.gif', '0') . '>';
     $TP_iconPDF = '<img ' . createComIcon($root_path, 'icon_acro.gif', '0') . '>';
     $TP_iconXPaper = '<img ' . createComIcon($root_path, 'nopmuser.gif', '0') . '>';
+    $TP_iconVSigns = '<img ' . createComIcon($root_path, 'sheart-working.gif', '0') . '>';
 } else {
     $TP_iconPost = '';
     $TP_iconAdmit = '';
@@ -105,6 +106,7 @@ if ($cfg['icons'] != 'no_icon') {
     $TP_iconCrossTeen = '';
     $TP_iconPDF = '';
     $TP_iconXPaper = '';
+    $TP_iconVSigns = '';
 }
 
 

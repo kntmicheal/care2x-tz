@@ -802,4 +802,3 @@ $smarty->assign('sMainBlockIncludeFile', 'ambulatory/outpatients.tpl');
  * show Template
  */
 $smarty->display('common/mainframe.tpl');
-?>

@@ -6,11 +6,11 @@
 //*******************the class for creating pie charts*******************
 //***********************************************************************
 //class piechart extends chart
-class piechart // modified by ELpidio Latorilla {
-
+class piechart {// modified by ELpidio Latorilla 
     // Modified by Elpidio latorilla 2003-04-23 
     // Moved the elements of class chart.class.php inside the this class 
     // to avoid loading the chart.class.php
+
     var $elements; //the input values
     var $elemetnames; //the name of the input values
     var $fractions; //the fractions of the elements
@@ -193,7 +193,7 @@ class piechart // modified by ELpidio Latorilla {
         imagearc($image, $r, $r, $r * 2 - 1, $r * 2 - 1, 0, 360, $black);
         imagefill($image, $r, $r, $fillcolor[0]);
         for ($j = 0; $j < count($this->elements); $j++) {
-        //for ($j=0;$j<1;$j++)
+            //for ($j=0;$j<1;$j++)
             $degree+=360 * $this->fractions[$j];
             if ($this->elements[$j]) {
                 imageline($image, $r, $r, $r + $r * cos($degree * pi() / 180), $r + $r * sin($degree * pi() / 180), $black);
@@ -218,5 +218,3 @@ class piechart // modified by ELpidio Latorilla {
     }
 
 }
-
-?>

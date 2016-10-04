@@ -43,7 +43,7 @@ else {
                 $attach_array[$num_attach]->file_mime = $mail_att_type;
             }
             // Registering the attachments array into the session
-            $_SESSION['num_attach', 'attach_array'];
+            $_SESSION['num_attach' . 'attach_array'];
             // Displaying the sending form with the new attachments array
             header("Content-type: text/html; Charset=$charset");
             require ('html/header.php');
@@ -110,7 +110,7 @@ else {
             session_unregister('attach_array');
             $attach_array = $tmp_array;
             // Registering the attachments array into the session
-            $_SESSION['num_attach', 'attach_array'];
+            $_SESSION['num_attach' . 'attach_array'];
             // Displaying the sending form with the new attachment array
             header("Content-type: text/html; Charset=$charset");
             require ('html/header.php');
@@ -124,4 +124,3 @@ else {
     }
     require ('html/footer.php');
 }
-?>

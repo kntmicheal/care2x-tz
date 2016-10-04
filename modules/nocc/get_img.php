@@ -10,7 +10,7 @@
  * did not receive this file, see http://www.fsf.org/copyleft/gpl.html.
  */
 
-$_SESSION['user', 'passwd'];
+$_SESSION['user' . 'passwd'];
 require ('conf.php');
 
 $pop = imap_open('{' . $servr . '}INBOX', $user, stripslashes($passwd));

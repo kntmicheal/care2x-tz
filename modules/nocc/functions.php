@@ -351,8 +351,8 @@ function remove_stuff($body, $lang, $mime) {
         $body = preg_replace("|<([^>]*)java|i", '<nocc_removed_java_tag', $body);
         $body = preg_replace("|<([^>]*)&{.*}([^>]*)>|i", "<&{;}\\3>", $body);
         //$body = preg_replace("|<([^>]*)mocha:([^>]*)>|i", "<nocc_removed_mocha:\\2>",$body);
-        $body = preg_replace("/href=\"mailto:([[:alnum:]+-=%&:_.~?@]+[#[:alnum:]+]*)\"/i", "<A HREF=\"$_SERVER['PHP_SELF']?action=write&amp;mail_to=\\1&amp;lang=$lang\"", $body);
-        $body = preg_replace("/href=mailto:([[:alnum:]+-=%&:_.~?@]+[#[:alnum:]+]*)/i", "<A HREF=\"$_SERVER['PHP_SELF']?action=write&amp;mail_to=\\1&amp;lang=$lang\"", $body);
+        $body = preg_replace("/href=\"mailto:([[:alnum:]+-=%&:_.~?@]+[#[:alnum:]+]*)\"/i", "<A HREF=\"" . $_SERVER['PHP_SELF'] . "?action=write&amp;mail_to=\\1&amp;lang=$lang\"", $body);
+        $body = preg_replace("/href=mailto:([[:alnum:]+-=%&:_.~?@]+[#[:alnum:]+]*)/i", "<A HREF=\"" . $_SERVER['PHP_SELF'] . "?action=write&amp;mail_to=\\1&amp;lang=$lang\"", $body);
         $body = preg_replace("/target=\"([[:alnum:]+-=%&:_.~?]+[#[:alnum:]+]*)\"/i", "", $body);
         $body = preg_replace("/target=([[:alnum:]+-=%&:_.~?]+[#[:alnum:]+]*)/i", "", $body);
         $body = preg_replace("/href=\"([[:alnum:]+-=%&:_.~?]+[#[:alnum:]+]*)\"/i", "<a href=\"\\1\" target=\"_blank\"", $body);
@@ -360,7 +360,7 @@ function remove_stuff($body, $lang, $mime) {
     } elseif (preg_match('/plain/i', $mime)) {
         $body = htmlspecialchars($body);
         $body = preg_replace("/(http|https|ftp)://([[:alnum:]+-=%&:_.~?]+[#[:alnum:]+]*)/i", "<a href=\"\\1://\\2\" target=\"_blank\">\\1://\\2</a>", $body);
-        $body = preg_replace("/([#[:alnum:]+-._]*)@([#[:alnum:]+-_]*)\.([[:alnum:]+-_.]+[#[:alnum:]+]*)/i", "<a href=\"$_SERVER['PHP_SELF']?action=write&amp;mail_to=\\1@\\2.\\3&amp;lang=$lang\">\\1@\\2.\\3</a>", $body);
+        $body = preg_replace("/([#[:alnum:]+-._]*)@([#[:alnum:]+-_]*)\.([[:alnum:]+-_.]+[#[:alnum:]+]*)/i", "<a href=\"" . $_SERVER['PHP_SELF'] . "?action=write&amp;mail_to=\\1@\\2.\\3&amp;lang=$lang\">\\1@\\2.\\3</a>", $body);
         $body = nl2br($body);
         if (function_exists('wordwrap'))
             $body = wordwrap($body, 80, "\n");

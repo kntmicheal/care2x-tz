@@ -66,7 +66,7 @@ switch ($action) {
         // We add the attachments of the original message
         list($num_attach, $attach_array) = save_attachment($servr, $user, stripslashes($passwd), $folder, $mail, $tmpdir);
         // Registering the attachments array into the session
-        $_SESSION['num_attach', 'attach_array'];
+        $_SESSION['num_attach' . 'attach_array'];
         require ('html/menu_inbox.php');
         require ('html/send.php');
         require ('html/menu_inbox.php');
@@ -82,7 +82,7 @@ switch ($action) {
         // We add the attachments of the original message
         list($num_attach, $attach_array) = save_attachment($servr, $user, stripslashes($passwd), $folder, $mail, $tmpdir);
         // Registering the attachments array into the session
-        $_SESSION['num_attach', 'attach_array'];
+        $_SESSION['num_attach' . 'attach_array'];
         require ('html/menu_inbox.php');
         require ('html/send.php');
         require ('html/menu_inbox.php');
@@ -94,7 +94,7 @@ switch ($action) {
         // We add the attachments of the original message
         list($num_attach, $attach_array) = save_attachment($servr, $user, stripslashes($passwd), $folder, $mail, $tmpdir);
         // Registering the attachments array into the session
-        $_SESSION['num_attach', 'attach_array'];
+        $_SESSION['num_attach' . 'attach_array'];
         require ('html/menu_inbox.php');
         require ('html/send.php');
         require ('html/menu_inbox.php');
