@@ -88,6 +88,7 @@ $LDOpEnd = 'OP End';
  */
 $LDScrubNurse = 'Scrub nurse';
 $LDAssitant = 'Assistant';
+$LDassitant = 'Assistant';
 $LDOpRoom = 'OP room';
 $LDResetAll = 'Erase all entries';
 $LDUpdateData = 'Update data';

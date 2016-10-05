@@ -393,10 +393,11 @@ if ($rows) {
     # Loop trough patients
 
     while ($patient = $opat_obj->FetchRow()) {
-        if ($patient['encounter_nr'] == $sEncNrBuffer)
+        if ($patient['encounter_nr'] == $sEncNrBuffer) {
             continue;
-        else
+        } else {
             $sEncNrBuffer = $patient['encounter_nr'];
+        }
 
         #print_r($patient); print '<hr />';
         # Reset elements

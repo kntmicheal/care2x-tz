@@ -39,6 +39,7 @@ if ($result = $db->Execute($sql)) {
     include_once($root_path . 'include/care_api_classes/class_department.php');
     $dept_obj = new Department();
     $depts_array = &$dept_obj->getAll();
+//    echo 'lklklkjlhkhkhk';
 } else {
     echo $sql;
 }

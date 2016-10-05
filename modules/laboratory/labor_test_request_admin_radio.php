@@ -95,15 +95,22 @@ if (!$mode) {
     $glob_obj = new GlobalConfig($GLOBAL_CONFIG);
 //Check if item is billed for outpatients
     if ($glob_obj->getConfigValue("restrict_unbilled_items") === "1") { //Check the restriction status
-        $sql = "SELECT care_encounter.pid as selian_pid,CONCAT(name_first,' ', name_2) AS name_first, UPPER(name_last) as name_last, batch_nr,care_encounter.encounter_nr,send_date,dept_nr FROM care_test_request_" . $db_request_table . "
+//        $sql = "SELECT care_encounter.pid as selian_pid, CONCAT(name_first,' ', name_2) AS name_first, "
+//                . " UPPER(name_last) as name_last, batch_nr,care_encounter.encounter_nr,send_date,dept_nr FROM care_test_request_" . $db_request_table . "
+//				LEFT JOIN care_encounter ON care_test_request_" . $db_request_table . ".encounter_nr=care_encounter.encounter_nr
+//				INNER JOIN care_person on care_encounter.pid=care_person.pid
+//	WHERE (care_test_request_" . $db_request_table . ".bill_number > '0' OR care_encounter.encounter_class_nr ='1') AND care_test_request_" . $db_request_table . ".is_disabled='0' AND care_test_request_" . $db_request_table . ".status='pending' "
+//                . "OR care_test_request_" . $db_request_table . ".status='received' ORDER BY  send_date ASC";
+        $sql = "SELECT care_person.selian_pid AS selian_pid, CONCAT(name_first,' ', name_2) AS name_first, "
+                . " UPPER(name_last) AS name_last, batch_nr,care_encounter.encounter_nr,send_date,dept_nr FROM care_test_request_" . $db_request_table . "
 				LEFT JOIN care_encounter ON care_test_request_" . $db_request_table . ".encounter_nr=care_encounter.encounter_nr
-				INNER JOIN care_person on care_encounter.pid=care_person.pid
+				INNER JOIN care_person ON care_encounter.pid=care_person.pid
 	WHERE (care_test_request_" . $db_request_table . ".bill_number > '0' OR care_encounter.encounter_class_nr ='1') AND care_test_request_" . $db_request_table . ".is_disabled='0' AND care_test_request_" . $db_request_table . ".status='pending' "
                 . "OR care_test_request_" . $db_request_table . ".status='received' ORDER BY  send_date ASC";
     } else {
-        $sql = "SELECT care_encounter.pid as selian_pid,CONCAT(name_first,' ', name_2) AS name_first, UPPER(name_last) as name_last, batch_nr,care_encounter.encounter_nr,send_date,dept_nr FROM care_test_request_" . $db_request_table . "
+        $sql = "SELECT care_person.selian_pid AS selian_pid,CONCAT(name_first,' ', name_2) AS name_first, UPPER(name_last) as name_last, batch_nr,care_encounter.encounter_nr,send_date,dept_nr FROM care_test_request_" . $db_request_table . "
 				LEFT JOIN care_encounter ON care_test_request_" . $db_request_table . ".encounter_nr=care_encounter.encounter_nr
-				LEFT JOIN care_person on care_encounter.pid=care_person.pid
+				LEFT JOIN care_person ON care_encounter.pid=care_person.pid
 	WHERE care_test_request_" . $db_request_table . ".status='pending' OR care_test_request_" . $db_request_table . ".status='received' ORDER BY  send_date ASC";
     }
     if ($requests = $db->Execute($sql)) {

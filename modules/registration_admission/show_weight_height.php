@@ -30,8 +30,16 @@ require_once($root_path . 'include/care_api_classes/class_mini_dental.php');
 $oc = new dental;
 $obj = new Measurement;
 
-$fileNr = $oc->GetFileNoFromPID($pid);
+if (isset($pid)) {
+    $_SESSION['sess_pid'] = $pid;
+}
 
+$fileNr = $oc->GetFileNoFromPID($pid);
+$encounter_nr = $oc->GetEncounterFromPid($_SESSION['sess_pid']);
+
+if ($_SESSION['sess_en'] !== $encounter_nr) {
+    $_SESSION['sess_en'] = $encounter_nr;
+}
 
 $unit_types = $obj->getUnits();
 $unit_rates = $obj->rateUnits();
@@ -80,8 +88,10 @@ if ($mode == 'new') {   //resolve for mode = new to mode = create
     $mode = 'create';
 }
 
+
 //echo $mode;
 //echo test_update();
+echo $_SESSION['sess_en'] . ' -Encounter' . $encounter_nr;
 
 if (!isset($mode)) {
     $mode = 'show';

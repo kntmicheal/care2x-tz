@@ -125,7 +125,7 @@
                     <td colspan=3><input type="text" readonly name="msr_date" size=10 maxlength=10 value="<?php echo $row['msr_date']; ?>" > </td>
                 </tr>
              <!--    <tr bgcolor="#f6f6f6">
-                  <td><FONT SIZE=-1  FACE="Arial" color="#000066"><?php // echo $LDTime;       ?></td>
+                  <td><FONT SIZE=-1  FACE="Arial" color="#000066"><?php // echo $LDTime;        ?></td>
                   <td><input type="text" name="msr_time" size=10 maxlength=5 ></td>
                 </tr>
                 -->
@@ -329,12 +329,12 @@
                     <td colspan=4>&nbsp;</td>
                 </tr>
         <!--                <tr bgcolor="#f6f6f6">
-                    <td><font color=red>*</font><FONT SIZE=-1  FACE="Arial" color="#000066"><?php // echo $LDMeasuredBy;   ?></td>
-                    <td colspan=3><input type="text" name="measured_by" size=50 maxlength=60 value="<?php // echo $_SESSION['sess_user_name'];   ?>"></td>
+                    <td><font color=red>*</font><FONT SIZE=-1  FACE="Arial" color="#000066"><?php // echo $LDMeasuredBy;    ?></td>
+                    <td colspan=3><input type="text" name="measured_by" size=50 maxlength=60 value="<?php // echo $_SESSION['sess_user_name'];    ?>"></td>
                 </tr>-->
                 <input type="hidden" name="modify_id" value="<?php echo $_SESSION['sess_user_name']; ?>">
-                <!--<input type="hidden" name="nr" value="<?php // echo $row['nr'];   ?>">-->
-                <!--<input type="hidden" name="history" value="<?php // echo $row['history']  ?>">-->
+                <!--<input type="hidden" name="nr" value="<?php // echo $row['nr'];    ?>">-->
+                <!--<input type="hidden" name="history" value="<?php // echo $row['history']   ?>">-->
                 <input type="hidden" name="mode" value="update">
                 <?php
             }
@@ -564,7 +564,8 @@
         }
         ?>
     </table>
-    <input type="hidden" name="encounter_nr" value="<?php echo $_SESSION['sess_en']; ?>">
+    <!--<input type="hidden" name="encounter_nr" value="<?php echo $_SESSION['sess_en']; ?>">-->
+    <input type="hidden" name="encounter_nr" value="<?php echo $encounter_nr ?>">
     <input type="hidden" name="pid" value="<?php echo $_SESSION['sess_pid']; ?>">
     <input type="image" <?php echo createLDImgSrc($root_path, 'savedisc.gif', '0'); ?>>
 </form>

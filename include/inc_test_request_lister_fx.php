@@ -129,7 +129,7 @@ while ($test_request = $requests->FetchRow()) {
                 if ($test_request['priority'] == 7) {
                     echo '<font size=1 color="red">';
                 }
-                echo $test_request['selian_pid'] . '/' . $test_request['name_last'] . ", " . ucwords($test_request['name_first']);
+                echo $test_request['selian_pid'] . '/ ' . $test_request['name_last'] . ", " . ucwords($test_request['name_first']);
                 echo '</font>';
             }
         }
