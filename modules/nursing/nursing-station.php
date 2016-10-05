@@ -212,7 +212,7 @@ ob_start();
     function getinfo(pn) {
 
 <?php
-/* if($edit) */ {
+/* if ($edit) */ {
     echo '
         urlholder="nursing-station-patientdaten.php' . URL_REDIRECT_APPEND;
     echo '&pn=" + pn + "';
@@ -474,7 +474,8 @@ if ($ward_ok) {
             }
 
             # If patient and edit show small color bars
-            if ($is_patient && $edit) {
+//            if ($is_patient && $edit) {
+            if ($is_patient) {
                 $smarty->assign('sMiniColorBars', '<a href="javascript:getinfo(\'' . $bed['encounter_nr'] . '\')">
 			 		<img src="' . $root_path . 'main/imgcreator/imgcreate_colorbar_small.php' . URL_APPEND . '&pn=' . $bed['encounter_nr'] . '" alt="' . $LDSetColorRider . '" align="absmiddle" border=0 width=80 height=18>
 			 		</a>');
@@ -491,7 +492,9 @@ if ($ward_ok) {
 
             # If patient, show images by sex
             if ($is_patient) {
-                $sBuffer = '<a href="javascript:popPic(\'' . $bed['pid'] . '\')">';
+//                $sBuffer = '<a href="javascript:popPic(\'' . $bed['pid'] . '\')">';
+                $sBuffer = '<a href="' . $root_path . 'modules/registration_admission/aufnahme_pass.php' . URL_APPEND . '&target=search&fwd_nr=' . $bed['encounter_nr'] . '" title="' . $LDAdmissionData . ' : ' . $LDClk2Show . '">';
+
                 switch (strtolower($bed['sex'])) {
                     case 'f':
                         $smarty->assign('sBedIcon', $sBuffer . '<img ' . createComIcon($root_path, 'spf.gif', '0', '', TRUE) . '></a>');
@@ -610,10 +613,17 @@ if ($ward_ok) {
                 $date = $enc_obj->EncounterDate();
 
                 $dateArr = date_parse($date);
+//                print_r($dateArr);
+                if ($dateArr['hour'] < 10) {                //Add leading zero to hours if < 10
+                    $dateArr['hour'] = '0' . $dateArr['hour'];
+                }
 
+                if ($dateArr['minute'] < 10) {                //Add leading zero to minutes if < 10
+                    $dateArr['minute'] = '0' . $dateArr['minute'];
+                }
                 $smarty->assign('sPatNr', $pid);
 
-                $smarty->assign('sAdmDate', formatDate2Local($date, $date_format) . ' ' . $dateArr['hour'] . ':' . $dateArr['minute']);
+                $smarty->assign('sAdmDate', formatDate2Local($date, $date_format) . "  &nbsp&nbsp" . $dateArr['hour'] . ':' . $dateArr['minute']);
             }
 
 

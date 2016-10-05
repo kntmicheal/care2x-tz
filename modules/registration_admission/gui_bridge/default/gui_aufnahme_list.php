@@ -99,12 +99,12 @@ if (isset($mode) && ($mode == 'search' || $mode == 'paginate')) {
         <tr>
             <td><img <?php echo createMascot($root_path, 'mascot1_r.gif', '0', 'bottom') ?> align="absmiddle"></td>
             <td class="prompt">
-    <?php
-    if ($rows)
-        echo str_replace("~nr~", $totalcount, $LDFoundData) . ' ' . $LDShowing . ' ' . $pagen->BlockStartNr() . ' ' . $LDTo . ' ' . $pagen->BlockEndNr() . '.';
-    else
-        echo str_replace('~nr~', '0', $LDSearchFoundAdmit);
-    ?>
+                <?php
+                if ($rows)
+                    echo str_replace("~nr~", $totalcount, $LDFoundData) . ' ' . $LDShowing . ' ' . $pagen->BlockStartNr() . ' ' . $LDTo . ' ' . $pagen->BlockEndNr() . '.';
+                else
+                    echo str_replace('~nr~', '0', $LDSearchFoundAdmit);
+                ?>
             </td>
         </tr>
     </table>
@@ -127,18 +127,18 @@ if (!empty($rows)) {
     $tbg = 'background="' . $root_path . 'gui/img/common/' . $theme_com_icon . '/' . $bgimg . '"';
     ?>
 
-    <table border=0 cellpadding=0 cellspacing=0>
-        <tr class="wardlisttitlerow">
-            <td><b>
-    <?php
-    if ($oitem == 'sex')
-        $flag = TRUE;
-    else
-        $flag = FALSE;
+    <table border=0.1 cellpadding=0 cellspacing=0 style="border-collapse: collapse">
+        <tr class="wardlisttitlerow" >
+            <td  style="padding-right: 15px;"><b>
+                    <?php
+                    if ($oitem == 'sex')
+                        $flag = TRUE;
+                    else
+                        $flag = FALSE;
 
-    echo $pagen->SortLink($LDSex, 'sex', $odir, $flag);
-    ?></b></td>
-            <td><b>
+                    echo $pagen->SortLink($LDSex, 'sex', $odir, $flag);
+                    ?></b></td>
+            <td style="padding-right: 15px;"><b>
                     <?php
                     if ($oitem == 'name_last')
                         $flag = TRUE;
@@ -146,7 +146,7 @@ if (!empty($rows)) {
                         $flag = FALSE;
                     echo $pagen->SortLink($LDLastName, 'name_last', $odir, $flag);
                     ?></b></td>
-            <td><b>
+            <td style="padding-right: 15px;"><b>
                     <?php
                     if ($oitem == 'name_first')
                         $flag = TRUE;
@@ -154,7 +154,7 @@ if (!empty($rows)) {
                         $flag = FALSE;
                     echo $pagen->SortLink($LDFirstName, 'name_first', $odir, $flag);
                     ?></b></td>
-            <td><b>
+            <td style="padding-right: 15px; padding-left: 15px"><b>
                     <?php
                     if ($oitem == 'date_birth')
                         $flag = TRUE;
@@ -162,15 +162,16 @@ if (!empty($rows)) {
                         $flag = FALSE;
                     echo $pagen->SortLink($LDBday, 'date_birth', $odir, $flag);
                     ?></b></td>
-            <td align="center"><b>
+
+            <td align="center" style="padding-right: 15px; padding-left: 15px"><b>
                     <?php
-                    if ($oitem == 'addr_zip')
+                    if ($oitem == 'selian_pid')
                         $flag = TRUE;
                     else
                         $flag = FALSE;
-                    echo $pagen->SortLink($LDZipCode, 'addr_zip', $odir, $flag);
+                    echo $pagen->SortLink($LDFileNr, 'selian_pid', $odir, $flag);
                     ?></b></td>
-            <td><b>
+            <td align="center" style="padding-right: 15px; padding-left: 15px"><b>
                     <?php
                     if ($oitem == 'encounter_nr')
                         $flag = TRUE;
@@ -178,15 +179,23 @@ if (!empty($rows)) {
                         $flag = FALSE;
                     echo $pagen->SortLink($LDAdmitNr, 'encounter_nr', $odir, $flag);
                     ?></b></td>
-
-            <td><b>
-        <?php
-        if ($oitem == 'encounter_date')
-            $flag = TRUE;
-        else
-            $flag = FALSE;
-        echo $pagen->SortLink($LDAdmitDate, 'encounter_date', $odir, $flag);
-        ?></b></td>
+            <td align="center" style="padding-right: 15px; padding-left: 15px"><b>
+                    <?php
+                    if ($oitem == 'addr_zip') {
+                        $flag = TRUE;
+                    } else {
+                        $flag = FALSE;
+                    }
+                    echo $pagen->SortLink($LDZipCode, 'addr_zip', $odir, $flag);
+                    ?></b></td>
+            <td align="center" style="padding-right: 15px; padding-left: 15px"><b>
+                    <?php
+                    if ($oitem == 'encounter_date')
+                        $flag = TRUE;
+                    else
+                        $flag = FALSE;
+                    echo $pagen->SortLink($LDAdmitDate, 'encounter_date', $odir, $flag);
+                    ?></b></td>
 
         </tr>
 
@@ -223,12 +232,13 @@ if (!empty($rows)) {
             echo '</a></td>
 			<td>&nbsp; <a href="' . $buf . '" title="' . $LDClk2Show . '">' . $result['name_last'] . '</a></td>
 			<td>&nbsp; &nbsp;<a href="' . $buf . '" title="' . $LDClk2Show . '">' . ucwords($result['name_first']) . '</a></td>
-			<td>&nbsp; &nbsp;' . @formatDate2Local($result['date_birth'], $date_format) . '</td>';
+			<td align="center">&nbsp; &nbsp;' . @formatDate2Local($result['date_birth'], $date_format) . '</td>';
 
             echo '
-			<td align=right>&nbsp; &nbsp;' . $result['selian_pid'] . '</td>
-			<td align=right>&nbsp; &nbsp;' . $result['encounter_nr'] . '</td>
-			<td align=right>&nbsp; &nbsp;<a href="' . $buf . '" title="' . $LDClk2Show . '">' . @formatDate2Local($result['encounter_date'], $date_format) . '</a></td>
+			<td align="center">&nbsp; &nbsp;' . $result['selian_pid'] . '</td>
+                        <td align="center">&nbsp; &nbsp;' . $result['encounter_nr'] . '</td>
+                        <td align="center">&nbsp; &nbsp;' . $result['addr_zip'] . '</td>
+			<td align="center">&nbsp; &nbsp;<a href="' . $buf . '" title="' . $LDClk2Show . '">' . @formatDate2Local($result['encounter_date'], $date_format) . '</a></td>
 		</tr>
 		<tr bgcolor=#0000ff>
 			<td colspan=8 height=1><img src="' . $root_path . 'gui/img/common/default/pixel.gif" border=0 width=1 height=1></td>
@@ -251,23 +261,23 @@ if (!empty($rows)) {
         <input type="submit" value="<?php echo $LDNewArchive ?>" >
     </form>
 
-            <?php
-            # End of the search result list display
-        } else {
+    <?php
+    # End of the search result list display
+} else {
 
-            # Else if result is empty, display the input form
-            ?>
+    # Else if result is empty, display the input form
+    ?>
 
     <form method="post" action="<?php echo $thisfile; ?>" name="aufnahmeform">
 
         <table border=0 cellspacing=1 cellpadding=0>
 
-                    <?php
-                        if (!isset($pid))
-                            $pid = '';
+            <?php
+            if (!isset($pid))
+                $pid = '';
 
-                        createTR('encounter_nr', $LDAdmitNr, $encounter_nr);
-                        ?>
+            createTR('encounter_nr', $LDAdmitNr, $encounter_nr);
+            ?>
 
             <tr>
                 <td background="<?php echo createBgSkin($root_path, 'tableHeaderbg3.gif'); ?>">&nbsp;<?php echo $LDAdmitDate ?>:
@@ -276,18 +286,18 @@ if (!empty($rows)) {
                     <input name="date_start" type="text" size=10 maxlength=10  value="<?php if (!empty($date_start)) echo @formatDate2Local($date_start, $date_format); ?>"  onBlur="IsValidDate(this, '<?php echo $date_format ?>')" onKeyUp="setDate(this, '<?php echo $date_format ?>', '<?php echo $lang ?>')">
                     <a href="javascript:show_calendar('aufnahmeform.date_start','<?php echo $date_format ?>')">
                         <img <?php echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle'); ?>></a><font size=1>[<?php
-            $dfbuffer = "LD_" . strtr($date_format, ".-/", "phs");
-            echo $$dfbuffer;
-                        ?>] </font>
+                    $dfbuffer = "LD_" . strtr($date_format, ".-/", "phs");
+                    echo $$dfbuffer;
+                    ?>] </font>
                 </td>
                 <td bgcolor="#eeeeee">
             <nobr>&nbsp;<?php echo $LDTo ?>:
                 <input name="date_end" type="text" size=10 maxlength=10 value="<?php if (!empty($date_end)) echo @formatDate2Local($date_end, $date_format); ?>"  onBlur="IsValidDate(this, '<?php echo $date_format ?>')" onKeyUp="setDate(this, '<?php echo $date_format ?>', '<?php echo $lang ?>')">
                 <a href="javascript:show_calendar('aufnahmeform.date_end','<?php echo $date_format ?>')">
                     <img <?php echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle'); ?>></a><font size=1>[<?php
-            $dfbuffer = "LD_" . strtr($date_format, ".-/", "phs");
-            echo $$dfbuffer;
-            ?>] </font>
+                $dfbuffer = "LD_" . strtr($date_format, ".-/", "phs");
+                echo $$dfbuffer;
+                ?>] </font>
             </nobr>
             </td>
             </tr>
@@ -356,20 +366,20 @@ if (!empty($rows)) {
                 <td background="<?php echo createBgSkin($root_path, 'tableHeaderbg3.gif'); ?>">&nbsp;<?php echo $LDAdmitClass ?>:
                 </td>
                 <td colspan=2 bgcolor="#eeeeee" >
-                        <?php
-                        # Create  encounter classes radiobuttons
-                        while ($result = $encounter_classes->FetchRow()) {
-                            ?>
-                        <input name="encounter_class_nr" type="radio"  value="<?php echo $result['class_nr']; ?>"  <?php if ($encounter_class_nr == $result['class_nr']) echo 'checked'; ?>>
-                            <?php
-                            $LD = $result['LD_var'];
-                            if (isset($$LD) && !empty($$LD))
-                                echo $$LD;
-                            else
-                                echo $result['name'];
-                            echo '&nbsp;';
-                        }
+                    <?php
+                    # Create  encounter classes radiobuttons
+                    while ($result = $encounter_classes->FetchRow()) {
                         ?>
+                        <input name="encounter_class_nr" type="radio"  value="<?php echo $result['class_nr']; ?>"  <?php if ($encounter_class_nr == $result['class_nr']) echo 'checked'; ?>>
+                        <?php
+                        $LD = $result['LD_var'];
+                        if (isset($$LD) && !empty($$LD))
+                            echo $$LD;
+                        else
+                            echo $result['name'];
+                        echo '&nbsp;';
+                    }
+                    ?>
                 </td>
             </tr>
 
@@ -402,31 +412,31 @@ if (!empty($rows)) {
                 <td colspan=2 bgcolor="#eeeeee">
                     <select name="dept_nr">
                         <option value=""><?php echo $LDSelectDepartment ?></option>
-    <?php
-    while (list($x, $v) = each($medical_depts)) {
+                        <?php
+                        while (list($x, $v) = each($medical_depts)) {
 
-        echo'
+                            echo'
                         <option value="' . $v['nr'] . '~' . $v['id'] . '">';
-        $buffer = $v['LD_var'];
-        if (isset($$buffer) && !empty($$buffer))
-            echo $$buffer;
-        else
-            echo $v['name_formal'];
-        echo '</option>';
-    }
-    ?>
+                            $buffer = $v['LD_var'];
+                            if (isset($$buffer) && !empty($$buffer))
+                                echo $$buffer;
+                            else
+                                echo $v['name_formal'];
+                            echo '</option>';
+                        }
+                        ?>
                     </select>
                 </td>
             </tr>
 
 
-    <?php
-    //d.r from merotech: Remove Diagnoses from Archive Form
-    //createTR( 'referrer_diagnosis', $LDDiagnosis,$referrer_diagnosis);
-    createTR('referrer_dr', $LDRecBy, $referrer_dr);
-    createTR('referrer_recom_therapy', $LDTherapy, $referrer_recom_therapy);
-    createTR('referrer_notes', $LDSpecials, $referrer_notes);
-    ?>
+            <?php
+            //d.r from merotech: Remove Diagnoses from Archive Form
+            //createTR( 'referrer_diagnosis', $LDDiagnosis,$referrer_diagnosis);
+            createTR('referrer_dr', $LDRecBy, $referrer_dr);
+            createTR('referrer_recom_therapy', $LDTherapy, $referrer_recom_therapy);
+            createTR('referrer_notes', $LDSpecials, $referrer_notes);
+            ?>
             <tr>
                 <td background="<?php echo createBgSkin($root_path, 'tableHeaderbg3.gif'); ?>">&nbsp;<?php echo 'Discharge Date' ?>:
                 </td>
@@ -452,23 +462,23 @@ if (!empty($rows)) {
                     <select name="discharge_id">
                         <option value=""><?php echo $LDSelectDiscType ?></option>
 
-    <?php
-    # Generate discharge types
+                        <?php
+                        # Generate discharge types
 
-    while ($dis_type = $discharge_types->FetchRow()) {
+                        while ($dis_type = $discharge_types->FetchRow()) {
 
-        echo '<option value="' . $dis_type['nr'] . '">' . $dis_type['name'] . '</option>';
-    }
-    ?>
+                            echo '<option value="' . $dis_type['nr'] . '">' . $dis_type['name'] . '</option>';
+                        }
+                        ?>
 
                     </select>
 
                 </td>
             </tr>
 
-                    <?php
-                    createTR('discharged_by', 'Discharged By', $discharged_by);
-                    ?>
+            <?php
+            createTR('discharged_by', 'Discharged By', $discharged_by);
+            ?>
 
 
             <tr bgcolor="white">
@@ -476,108 +486,108 @@ if (!empty($rows)) {
                     <!--<td background="<?php echo createBgSkin($root_path, 'tableHeaderbg3.gif'); ?>">&nbsp;<?php echo $LDBillType ?>:-->
                 </td>
                 <td colspan=2 bgcolor="#eeeeee">
-            <?php
-            # Create the bill type radiobuttons
-            //if($insurance_classes){
-            //	while($result=$insurance_classes->FetchRow()) {
-            ?>
+                    <?php
+                    # Create the bill type radiobuttons
+                    //if($insurance_classes){
+                    //	while($result=$insurance_classes->FetchRow()) {
+                    ?>
     <!--	<input name="insurance_class_nr" type="radio"  value="<?php echo $result['class_nr']; ?>" >-->
-    <?php
-    //		$LD=$result['LD_var'];
-    //		if(isset($$LD)&&!empty($$LD)) echo $$LD; else echo $result['name'];
-    //		echo '&nbsp;';
-    //	}
-    //}
-    ?>
+                    <?php
+                    //		$LD=$result['LD_var'];
+                    //		if(isset($$LD)&&!empty($$LD)) echo $$LD; else echo $result['name'];
+                    //		echo '&nbsp;';
+                    //	}
+                    //}
+                    ?>
                 </td>
             </tr>
 
-                    <?php
-                    //d.r. from merotech: Remove Insurance from Archive Form
-                    //createTR( 'insurance_nr', $LDInsuranceNr,$insurance_nr);
-                    //createTR( 'insurance_firm_name', $LDInsuranceCo,$insurance_firm_name);
-                    //if (!$GLOBAL_CONFIG['patient_care_service_hide'] && $care_ok)
-                    if (!$GLOBAL_CONFIG['patient_service_care_hide']) {
-                        ?>
+            <?php
+            //d.r. from merotech: Remove Insurance from Archive Form
+            //createTR( 'insurance_nr', $LDInsuranceNr,$insurance_nr);
+            //createTR( 'insurance_firm_name', $LDInsuranceCo,$insurance_firm_name);
+            //if (!$GLOBAL_CONFIG['patient_care_service_hide'] && $care_ok)
+            if (!$GLOBAL_CONFIG['patient_service_care_hide']) {
+                ?>
                 <tr>
                     <td background="<?php echo createBgSkin($root_path, 'tableHeaderbg3.gif'); ?>"><?php echo $LDCareServiceClass ?>:
                     </td>
                     <td colspan=2 bgcolor="#eeeeee"><nobr>
                     <select name="sc_care_class_nr" onFocus="hidecat()">
                         <option value=""> </option>
-                    <?php
-                    # Generate the service classes
+                        <?php
+                        # Generate the service classes
 
-                    while ($buffer = $care_service->FetchRow()) {
-                        echo '
+                        while ($buffer = $care_service->FetchRow()) {
+                            echo '
 				<option value="' . $buffer['class_nr'] . '">';
-                        if (empty($$buffer['LD_var']))
-                            echo $buffer['name'];
-                        else
-                            echo $$buffer['LD_var'];
-                        echo '</option>';
-                    }
-                    ?>
+                            if (empty($$buffer['LD_var']))
+                                echo $buffer['name'];
+                            else
+                                echo $$buffer['LD_var'];
+                            echo '</option>';
+                        }
+                        ?>
                     </select>
                     </td>
                     </tr>
-                                <?php
-                            }
+                    <?php
+                }
 
-                            //if (!$GLOBAL_CONFIG['patient_service_room_hide'] && $room_ok)
-                            if (!$GLOBAL_CONFIG['patient_service_room_hide']) {
-                                ?>
+                //if (!$GLOBAL_CONFIG['patient_service_room_hide'] && $room_ok)
+                if (!$GLOBAL_CONFIG['patient_service_room_hide']) {
+                    ?>
                     <tr>
                         <td background="<?php echo createBgSkin($root_path, 'tableHeaderbg3.gif'); ?>"><?php echo $LDRoomServiceClass ?>:
                         </td>
                         <td colspan=2 bgcolor="#eeeeee">
                             <select name="sc_room_class_nr" onFocus="hidecat()">
                                 <option value="" > </option>
-        <?php
-        # Generate the service classes
-        while ($buffer = $room_service->FetchRow()) {
-            echo '
+                                <?php
+                                # Generate the service classes
+                                while ($buffer = $room_service->FetchRow()) {
+                                    echo '
 				<option value="' . $buffer['class_nr'] . '">';
-            if (empty($$buffer['LD_var']))
-                echo $buffer['name'];
-            else
-                echo $$buffer['LD_var'];
-            echo '</option>';
-        }
-        ?>
+                                    if (empty($$buffer['LD_var']))
+                                        echo $buffer['name'];
+                                    else
+                                        echo $$buffer['LD_var'];
+                                    echo '</option>';
+                                }
+                                ?>
                             </select>
                         </td>
                     </tr>
-                                <?php
-                            }
+                    <?php
+                }
 
-                            //if (!$GLOBAL_CONFIG['patient_service_att_dr_hide'] && $att_dr_ok)
-                            if (!$GLOBAL_CONFIG['patient_service_att_dr_hide']) {
-                                ?>
+                //if (!$GLOBAL_CONFIG['patient_service_att_dr_hide'] && $att_dr_ok)
+                if (!$GLOBAL_CONFIG['patient_service_att_dr_hide']) {
+                    ?>
                     <tr>
                         <td background="<?php echo createBgSkin($root_path, 'tableHeaderbg3.gif'); ?>"><?php echo $LDAttDrServiceClass ?>:
                         </td>
                         <td colspan=2 bgcolor="#eeeeee">
                             <select name="sc_att_dr_class_nr" onFocus="hidecat()">
                                 <option value="" > </option>
-        <?php
-        # Generate the service classes
-        while ($buffer = $att_dr_service->FetchRow()) {
-            echo '
+                                <?php
+                                # Generate the service classes
+                                while ($buffer = $att_dr_service->FetchRow()) {
+                                    echo '
 				<option value="' . $buffer['class_nr'] . '">';
-            if (empty($$buffer['LD_var']))
-                echo $buffer['name'];
-            else
-                echo $$buffer['LD_var'];
-            echo '</option>';
-        }
-        ?>
+                                    if (empty($$buffer['LD_var']))
+                                        echo $buffer['name'];
+                                    else
+                                        echo $$buffer['LD_var'];
+                                    echo '</option>';
+                                }
+                                ?>
                             </select>
                         </td>
                     </tr>
-            <?php
-        }
-        ?>
+                    <?php
+                }
+                ?>
 
         </table>
 
@@ -593,32 +603,32 @@ if (!empty($rows)) {
 
     </form>
 
-        <?php
-    }
-    ?>
+    <?php
+}
+?>
 
 <p>
     <a href="
-<?php
-if ($_COOKIE['ck_login_logged' . $sid])
-    echo 'aufnahme_pass.php';
-else
-    echo 'patient.php';
-echo URL_APPEND;
-?>
+    <?php
+    if ($_COOKIE['ck_login_logged' . $sid])
+        echo 'aufnahme_pass.php';
+    else
+        echo 'patient.php';
+    echo URL_APPEND;
+    ?>
        "><img <?php echo createLDImgSrc($root_path, 'cancel.gif', '0') ?> alt="<?php echo $LDCancelClose ?>"></a>
 
 <p>
 
-<?php
+    <?php
 # End buffering, get contents, assign to templates and display template
 
-$sTemp = ob_get_contents();
-ob_end_clean();
+    $sTemp = ob_get_contents();
+    ob_end_clean();
 
-$smarty->assign('sMainDataBlock', $sTemp);
+    $smarty->assign('sMainDataBlock', $sTemp);
 
-$smarty->assign('sMainBlockIncludeFile', 'registration_admission/admit_plain.tpl');
+    $smarty->assign('sMainBlockIncludeFile', 'registration_admission/admit_plain.tpl');
 
-$smarty->display('common/mainframe.tpl');
-?>
+    $smarty->display('common/mainframe.tpl');
+    ?>

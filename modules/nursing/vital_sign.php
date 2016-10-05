@@ -5,8 +5,16 @@ require_once($root_path . 'include/care_api_classes/class_mini_dental.php');
 $oc = new dental;
 $obj = new Measurement;
 
-$fileNr = $oc->GetFileNoFromPID($pid);
+if (isset($pid)) {
+    $_SESSION['sess_pid'] = $pid;
+}
 
+$fileNr = $oc->GetFileNoFromPID($pid);
+$encounter_nr = $oc->GetEncounterFromPid($_SESSION['sess_pid']);
+
+if ($_SESSION['sess_en'] !== $encounter_nr) {
+    $_SESSION['sess_en'] = $encounter_nr;
+}
 
 $unit_types = $obj->getUnits();
 $unit_rates = $obj->rateUnits();
@@ -65,13 +73,17 @@ if ($result = $db->Execute($sql)) {
     if ($rows = $result->RecordCount()) {
         while ($msr_row = $result->FetchRow()) {
             # group the elements
-            $msr_comp[$msr_row['create_time']]['encounter_nr'] = $msr_row['encounter_nr'];
-            $msr_comp[$msr_row['create_time']]['msr_date'] = $msr_row['msr_date'];
-            $msr_comp[$msr_row['create_time']]['msr_time'] = $msr_row['msr_time'];
-            $msr_comp[$msr_row['create_time']][$msr_row['msr_type_nr']] = $msr_row;
+//            $msr_comp[$msr_row['create_time']]['encounter_nr'] = $msr_row['encounter_nr'];
+//            $msr_comp[$msr_row['create_time']]['msr_date'] = $msr_row['msr_date'];
+//            $msr_comp[$msr_row['create_time']]['msr_time'] = $msr_row['msr_time'];
+//            $msr_comp[$msr_row['create_time']][$msr_row['msr_type_nr']] = $msr_row;
+
+            $msr_comp[$msr_row['msr_time']]['encounter_nr'] = $msr_row['encounter_nr'];
+            $msr_comp[$msr_row['msr_time']]['msr_date'] = $msr_row['msr_date'];
+            $msr_comp[$msr_row['msr_time']]['msr_time'] = $msr_row['msr_time'];
+            $msr_comp[$msr_row['msr_time']][$msr_row['msr_type_nr']] = $msr_row;
         }
     }
 }
 
 include($root_path . 'modules/registration_admission/gui_bridge/default/gui_show_weight_height.php');
-?>

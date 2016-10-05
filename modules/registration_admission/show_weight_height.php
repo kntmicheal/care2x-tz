@@ -91,7 +91,7 @@ if ($mode == 'new') {   //resolve for mode = new to mode = create
 
 //echo $mode;
 //echo test_update();
-echo $_SESSION['sess_en'] . ' -Encounter' . $encounter_nr;
+//echo $_SESSION['sess_en'] . ' -Encounter' . $encounter_nr;
 
 if (!isset($mode)) {
     $mode = 'show';

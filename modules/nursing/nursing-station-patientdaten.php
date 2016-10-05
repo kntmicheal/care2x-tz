@@ -267,8 +267,9 @@ $smarty->assign('sWindowTitle', ucfirst($result[name_last]) . "," . ucwords($res
 
 # Body Onload js
 $sOnLoadJs = 'onLoad="initwindow();';
-if ($mode == 'changes_saved')
+if ($mode == 'changes_saved') {
     $sOnLoadJs = $sOnLoadJs . 'window.opener.location.reload();';
+}
 $sOnLoadJs = $sOnLoadJs . '"';
 $smarty->assign('sOnLoadJs', $sOnLoadJs);
 
@@ -277,7 +278,7 @@ if (isset($_SESSION['deptnr'])) {
     $dept_nr = $_SESSION['deptnr'];
 }
 
-$multi = new multi;
+//$multi = new multi;
 $vct = $multi->__genNumbers();
 
 # if rooming list enabled
@@ -435,14 +436,15 @@ echo "$sid&lang=$lang&edit=$edit&station=$station&pn=$pn&dept_id=";
     }
     function openDRGComposite() {
 <?php
-if ($cfg['dhtml'])
+if ($cfg['dhtml']) {
     echo '
                         w=window.parent.screen.width;
                         h=window.parent.screen.height;';
-else
+} else {
     echo '
                         w=800;
                         h=650;';
+}
 ?>
 
         drgcomp_<?php echo $_SESSION['sess_full_en'] . "_" . $op_nr . "_" . $dept_nr . "_" . $saal ?> = window.open("<?php echo $root_path ?>modules/drg/drg-composite-start.php<?php echo URL_REDIRECT_APPEND . "&display=composite&pn=" . $pn . "&edit=$edit&ln=$name_last&fn=$name_first&bd=$date_birth&dept_nr=$dept_nr&oprm=$saal"; ?>", "drgcomp_<?php echo $encounter_nr . "_" . $op_nr . "_" . $dept_nr . "_" . $saal ?>", "menubar=no,resizable=yes,scrollbars=yes, width=" + (w - 15) + ", height=" + (h - 60));
@@ -471,48 +473,54 @@ ob_start();
 
         function ha() {
             global $edit;
-            if ($edit)
+            if ($edit) {
                 return '<a href="#">';
+            }
         }
 
         function he() {
             global $edit;
-            if ($edit)
+            if ($edit) {
                 return 'onClick="javascript:pullbar(this)"></a><a href="#">';
-            else
+            } else {
                 return '>';
+            }
         }
 
         function hx() {
             global $edit;
-            if ($edit)
+            if ($edit) {
                 return 'onClick="javascript:pullbar(this)"></a>';
-            else
+            } else {
                 return '>';
+            }
         }
 
         function gx() {
             global $edit;
-            if ($edit)
+            if ($edit) {
                 return 'onClick="javascript:pullGreenbar(this)"></a>';
-            else
+            } else {
                 return '>';
+            }
         }
 
         function rx() {
             global $edit;
-            if ($edit)
+            if ($edit) {
                 return 'onClick="javascript:pullRosebar(this)"></a>';
-            else
+            } else {
                 return '>';
+            }
         }
 
         function mx() {
             global $edit;
-            if ($edit)
+            if ($edit) {
                 return 'onClick="javascript:pullMaroonbar(this)"></a>';
-            else
+            } else {
                 return '>';
+            }
         }
 
         require_once($root_path . 'include/care_api_classes/class_notes_nursing.php');
@@ -1002,6 +1010,10 @@ ob_start();
                             <td align="center" colspan=2 style="border-top:3px solid red;">
                                 <input id="bner" onClick="window.location.href = './nursing-station-patientdaten_print.php<?php print "?&sid=" . $_GET['sid'] . "&pday=" . $_GET['pday'] . "&pn=" . $_GET['pn'] . "&lang=" . $_GET['lang'] . "&pday=" . $_GET['pday'] . "&pmonth=" . $_GET['pmonth'] . "&pyear=" . $_GET['pyear'] . "&pid=" . (($pid != '') ? $pid : $_SESSION['sess_pid']); ?>'"
                                        type="button" value="PRINT" style="width:100px; border:1px solid maroon; margin:-2px;">
+
+<!--                                <input id="bner" onClick="window.print()"
+                                       type="button" value="PRINT" style="width:100px; border:1px solid maroon; margin:-2px;">-->
+
                             </td>
                         </tr>
                     </table>
