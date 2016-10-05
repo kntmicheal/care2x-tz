@@ -472,7 +472,8 @@ $smarty->assign('LDAdmitBy', $LDAdmitBy);
 //    $encoder = $user_id;
 //else
 //    $encoder = $_SESSION['sess_user_name'];
-$smarty->assign('encoder', $encoder);
+//$smarty->assign('encoder', $encoder);
+$smarty->assign('encoder', $create_id);
 
 # Buffer the options block
 

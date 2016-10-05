@@ -29,6 +29,7 @@ switch ($target) {
     case 'diagnosis':
         $allowedarea = &$allow_area['test_read'];
         $fileforward = 'amb_clinic_diagnosis_list.php' . $append . '&origin=pass&dept=' . urlencode($dept) . '&dept_nr=' . $dept_nr . '&target=diagnosis';
+//        $fileforward = $root_path . 'modules/nursing/nursing-station-diagnosis-list.php' . $append . '&origin=pass&dept=' . urlencode($dept) . '&dept_nr=' . $dept_nr . '&target=diagnosis';
         $lognote = 'ok';
         break;
     case 'pharmacy':

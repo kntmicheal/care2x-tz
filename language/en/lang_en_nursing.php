@@ -435,6 +435,7 @@ $LDPrescriptions = 'Prescriptions';
 $LDServices = 'Services';
 $LDServProc = 'Services/Procedures';
 
+$LDNotes = 'Notes';
 $LDRadioRequest = 'Radiology Request';
 $LDRadioReport = 'Radiology Report';
 $LDLaboratories = 'Laboratories';
@@ -444,6 +445,8 @@ $LDProcedureType = 'OP/ Procedure Category';
 $LDConsumables = 'Consumables';
 $LDRadiology = 'Radiology';
 $LDDiagnosis = 'Diagnosis';
+$LDDiagnosisDescr = 'Diagnosis Description';
+$LDDiagnosisDate = 'Diagnosis Date';
 
 $LDNoDiagnosesAvailable = '--- NO DIAGNOSIS AVAILABLE ---';
 $LDLastDiagnosis = 'Last Diagnosis';
@@ -457,9 +460,9 @@ $LDTimesPerDay = 'Times Per Day';
 $LDPrescrWithoutServices = 'Prescriptions';
 $LDPrescriber = 'Prescribed By';
 
-$LDShowLabs = 'Show Laboratory Requests';
-$LDShowRadio = 'Show Radiology Requests';
-$LDShowDiagnosis = 'Show Diagnosis';
+//$LDShowLabs = 'Show Laboratory Requests';
+//$LDShowRadio = 'Show Radiology Requests';
+//$LDShowDiagnosis = 'Show Diagnosis';
 
 $LDRequestedBy = 'Requested By';
 $LDRequestTime = 'Request Date/Time';

@@ -29,7 +29,12 @@
         include($root_path . "language/" . $lang . "/lang_" . $lang . "_" . LANG_FILE);
     }
 
-    $ward_nr = $_GET['ward_nr'];
+    if (isset($_POST['ward_nr'])) {
+        $ward_nr = $_POST['ward_nr'];
+    }
+    if (isset($_GET['ward_nr']) && $_GET['ward_nr'] != '') {
+        $ward_nr = $_GET['ward_nr'];
+    }
     $station = $_GET['station'];
 
     $breakfile = 'nursing-station-pass.php' . URL_APPEND . '&ward_nr=' . $ward_nr . '&mode=show&rt=pflege&edit=1&station=' . $station;
@@ -117,52 +122,80 @@ require($root_path . 'include/inc_checkdate_lang.php');
     </HEAD>
     <BODY bgcolor=#ffffff link=#000066 alink=#cc0000 vlink=#000066  >
 
+        <form name="nursingform" method="GET" action="">
 
 
 
+            <table width=100% border=0 cellspacing=0 height=100%>
+                <tbody class="main">
+                    <tr>
+                        <td  valign="top" align="middle" height="35">
+                            <table cellspacing="0"  class="titlebar" border=0>
+                                <tr valign=top  class="titlebar" >
+                                    <td bgcolor="#99ccff" >
+                                        &nbsp;&nbsp;<font color="#330066"><?php echo 'Diagnosis for ' . $station; ?></font>
 
-        <table width=100% border=0 cellspacing=0 height=100%>
-            <tbody class="main">
-                <tr>
-                    <td  valign="top" align="middle" height="35">
-                        <table cellspacing="0"  class="titlebar" border=0>
-                            <tr valign=top  class="titlebar" >
-                                <td bgcolor="#99ccff" >
-                                    &nbsp;&nbsp;<font color="#330066"><?php echo 'Diagnosis for ' . $station; ?></font>
+                                    </td>
+                                    <td bgcolor="#99ccff" align=right><a
+                                            href="javascript:window.history.back()"><img src="../../gui/img/control/default/en/en_back2.gif" border=0 width="110" height="24" alt="" style="filter:alpha(opacity=70)" onMouseover="hilite(this, 1)" onMouseOut="hilite(this, 0)" ></a><a
+                                            href="javascript:gethelp('billing_overview.php','Pharmacy')"><img src="../../gui/img/control/default/en/en_hilfe-r.gif" border=0 width="75" height="24" alt="" style="filter:alpha(opacity=70)" onMouseover="hilite(this, 1)" onMouseOut="hilite(this, 0)"></a><a
+                                            href="<?php echo $breakfile; ?>"><img src="../../gui/img/control/default/en/en_close2.gif" border=0 width="103" height="24" alt="" style="filter:alpha(opacity=70)" onMouseover="hilite(this, 1)" onMouseOut="hilite(this, 0)"></a>  </td>
+                                </tr>
+                            </table>		</td>
+                    </tr>
 
-                                </td>
-                                <td bgcolor="#99ccff" align=right><a
-                                        href="javascript:window.history.back()"><img src="../../gui/img/control/default/en/en_back2.gif" border=0 width="110" height="24" alt="" style="filter:alpha(opacity=70)" onMouseover="hilite(this, 1)" onMouseOut="hilite(this, 0)" ></a><a
-                                        href="javascript:gethelp('billing_overview.php','Pharmacy')"><img src="../../gui/img/control/default/en/en_hilfe-r.gif" border=0 width="75" height="24" alt="" style="filter:alpha(opacity=70)" onMouseover="hilite(this, 1)" onMouseOut="hilite(this, 0)"></a><a
-                                        href="<?php echo $breakfile; ?>"><img src="../../gui/img/control/default/en/en_close2.gif" border=0 width="103" height="24" alt="" style="filter:alpha(opacity=70)" onMouseover="hilite(this, 1)" onMouseOut="hilite(this, 0)"></a>  </td>
-                            </tr>
-                        </table>		</td>
-                </tr>
+                    <tr>
+                        <td bgcolor=#ffffff valign=top>
 
-                <tr>
-                    <td bgcolor=#ffffff valign=top>
+                            <br>
+                            <blockquote>
+                                <TABLE cellSpacing=0  width=800 class="submenu_frame" cellpadding="0">
+                                    <TBODY>
+                                        <?php
+                                        include_once($root_path . 'include/inc_date_format_functions.php');
 
-                        <br>
-                        <blockquote>
-                            <TABLE cellSpacing=0  width=800 class="submenu_frame" cellpadding="0">
-                                <TBODY>
+                                        if (isset($_GET['prescr_date'])) {
+                                            $prescr_date = $_GET['prescr_date'];
+                                            //echo 'Date set: '.$prescr_date;
+                                        } else {
+                                            $prescr_date = formatDate2Local(date('Y-m-d'), $date_format);
+                                        }
+                                        ?>
+                                    <br>
+                                    <TR>
+                                        <TD bgcolor=#ffffff align="center">
+                                            <b>Filter by Date: </b>
+                                            <!--</TD><TD>-->
+                                            <input name="prescr_date" type="text" size="15" maxlength=10 value="<?php {
+                                                echo $prescr_date;
+                                            }
+                                            ?>"
+                                                   onFocus="this.select();"
+                                                   onBlur="IsValidDate(this, 'dd/MM/yyyy')"
+                                                   onKeyUp="setDate(this, 'dd/MM/yyyy', 'en');">
+                                            <a href="javascript:show_calendar('nursingform.prescr_date','dd/MM/yyyy')">
+                                                <img <?php echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle'); ?>></a>
+
+
+                                            <font size=1>[
+                                            <?php
+                                            $dfbuffer = "LD_" . strtr($date_format, ".-/", "phs");
+                                            echo $$dfbuffer;
+                                            ?>
+                                            ] </font>
+                                            <!--</TD>-->
+                                            <!--<br>-->
+                                            <!--<td>-->
+                                            <input type="submit" name="setTime" value="Show">
+                                        </td>
+                                    </TR>
+                                    <TR>
+                                        <TD bgcolor=#ffffff align="center">&nbsp;</TD>
+                                    </TR>
                                     <?php
-                                    include_once($root_path . 'include/inc_date_format_functions.php');
-
-                                    if (isset($_GET['prescr_date'])) {
-                                        $prescr_date = $_GET['prescr_date'];
-                                        //echo 'Date set: '.$prescr_date;
-                                    } else {
-                                        $prescr_date = formatDate2Local(date('Y-m-d'), $date_format);
-                                    }
-
-                                    echo '<tr class="titlebar" bgcolor="#99ccff"><td><font color="#330066">Diagnosis for ' . $prescr_date . '</font></td></tr>';
+                                    echo '<tr class="titlebar" bgcolor="#99ccff"><td><font color="#330066">Diagnosis for ' . $station . ' - ' . $prescr_date . '</font></td></tr>';
                                     echo '<tr class="titlebar" bgcolor="#99ccff"><td>&nbsp;</td></tr>';
                                     ?>
-
-
-
-
 
                                     <TR>
                                         <TD>
@@ -174,14 +207,15 @@ require($root_path . 'include/inc_checkdate_lang.php');
                                                         <td class="submenu_item"><?php echo $LDPatientID ?></td>
                                                         <td class="submenu_item"><?php echo $LDLastName . ', ' . $LDName ?></td>
                                                         <td class="submenu_item"><?php echo $LDDiagnosis ?></td>
+                                                        <td class="submenu_item"><?php echo $LDDiagnosisDescr ?></td>
+                                                        <td class="submenu_item"><?php echo $LDNotes ?></td>
                                                         <td class="submenu_item"><?php echo $LDCaseType ?></td>
+                                                        <td class="submenu_item"><?php echo $LDDiagnosisDate ?></td>
                                                         <td class="submenu_item"><?php echo $LDEnteredBy ?></td>
 
                                                     </tr>
 
-                                                <form name="nursingform" method="GET" action="">
-
-<?php
+                                                    <?php
 //			include_once($root_path.'include/inc_date_format_functions.php');
 //
 //			if (isset($_GET['prescr_date']))
@@ -200,182 +234,190 @@ require($root_path . 'include/inc_checkdate_lang.php');
 
 
 
-$coreObjOuter = new Core;
+                                                    $coreObjOuter = new Core;
 
-$sqlOuter = "select * from care_encounter where current_ward_nr=$ward_nr and is_discharged=0";
+                                                    $sqlOuter = "select * from care_encounter where current_ward_nr=$ward_nr and is_discharged=0";
 
-$coreObjOuter->result = $db->Execute($sqlOuter);
+                                                    $coreObjOuter->result = $db->Execute($sqlOuter);
 
-foreach ($coreObjOuter->result as $rowEncounter) {
+                                                    foreach ($coreObjOuter->result as $rowEncounter) {
 
-    echo '<TR  height=1>
-                        <TD colSpan=7 class="vspace"><IMG height=1 src="../../gui/img/common/default/pixel.gif" width=5></TD>
-                      </TR>';
-
-
-    echo '<tr>';
-
-    //data person
-    $pid = $rowEncounter['pid'];
-    echo '<td>' . $pid . '</td>';
-
-    $sqlPerson = "select * from care_person where pid=$pid";
-    $coreObjInner->result = $db->Execute($sqlPerson);
-    $rowPerson = $coreObjInner->result->FetchRow();
-    $name_last = $rowPerson['name_last'];
-    $name_first = $rowPerson['name_first'];
-
-    echo '<td>' . $name_last . ', ' . $name_first . '</td>';
+                                                        echo '<TR  height=1>
+                                        <TD colSpan=8 class="vspace"><IMG height=1 src="../../gui/img/common/default/pixel.gif" width=5></TD>
+                                            </TR>';
 
 
-    //encounter nr
-    $encounterNr = $rowEncounter['encounter_nr'];
-    //echo 'Encounter nr: '.$encounterNr.'<br> ';
-    //diagnosis
-    //$sqlInner = "select * from care_encounter_prescription where encounter_nr = $encounterNr";
+                                                        echo '<tr>';
+
+                                                        //data person
+                                                        $pid = $rowEncounter['pid'];
+                                                        echo '<td>' . $pid . '</td>';
+
+                                                        $sqlPerson = "select * from care_person where pid=$pid";
+                                                        $coreObjInner->result = $db->Execute($sqlPerson);
+                                                        $rowPerson = $coreObjInner->result->FetchRow();
+                                                        $name_last = strtoupper($rowPerson['name_last']);
+                                                        $name_first = ucwords($rowPerson['name_first'] . ' ' . $rowPerson['name_2']);
+
+                                                        echo '<td>' . $name_last . ', ' . $name_first . '</td>';
 
 
-    $dateSQL = substr($prescr_date, 6, 4) . '-' . substr($prescr_date, 3, 2) . '-' . substr($prescr_date, 0, 2);
-
-    $sqlInner = "select * from care_tz_diagnosis" .
-            " where encounter_nr = $encounterNr";
-
-
-    $coreObjInner->result = $db->Execute($sqlInner);
-
-    $prescr = '';
-
-    foreach ($coreObjInner->result as $rowPrescr) {
-
-        if ($prescr == '')
-            $prescr .= '<td>';
-        else
-            $prescr .= '<tr><td>&nbsp;</td><td>&nbsp;</td><td>';
-
-        $diagnosis_code = $rowPrescr['ICD_10_code'];
-
-        $type = $rowPrescr['type'];
-
-        $doctor = $rowPrescr['doctor_name'];
-
-        $prescr .= $diagnosis_code . '</td><td>' . $type . '</td><td>' . $doctor;
-
-        $prescr .= '</td></tr>';
+                                                        //encounter nr
+                                                        $encounterNr = $rowEncounter['encounter_nr'];
+                                                        //echo 'Encounter nr: '.$encounterNr.'<br> ';
+                                                        //diagnosis
+                                                        //$sqlInner = "select * from care_encounter_prescription where encounter_nr = $encounterNr";
 
 
-        if (isset($_GET['save'])) {
+                                                        $dateSQL = substr($prescr_date, 6, 4) . '-' . substr($prescr_date, 3, 2) . '-' . substr($prescr_date, 0, 2);
+//                                                        echo $dateSQL;
 
-            $taken = $_GET['taken_' . $nr];
+                                                        $sqlInner = "select *, FROM_UNIXTIME(timestamp) AS diag_date from care_tz_diagnosis" .
+                                                                " where encounter_nr = $encounterNr "
+                                                                . "AND FROM_UNIXTIME(timestamp) like '%$dateSQL%'";
+//                                                        echo $sqlInner;
 
-            if ($taken == 'on')
-                $takenSetter = 1;
-            else
-                $takenSetter = 0;
+                                                        $coreObjInner->result = $db->Execute($sqlInner);
 
+                                                        $prescr = '';
 
-            $sqlTaken = "UPDATE care_encounter_prescription SET taken='$takenSetter' WHERE nr='$nr'";
-            $db->Execute($sqlTaken);
-        }
-    }
-    if ($prescr == '')
-        $prescr .= '<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+                                                        foreach ($coreObjInner->result as $rowPrescr) {
+//                                                            print_r($rowPrescr);
+                                                            if ($prescr == '')
+                                                                $prescr .= '<td>';
+                                                            else
+                                                                $prescr .= '<tr><td>&nbsp;</td><td>&nbsp;</td><td>';
 
-    echo $prescr;
-}
-?>
-                                                    <input type="hidden" name="station" value="<?php echo $station ?>">
-                                                    <input type="hidden" name="ward_nr" value="<?php echo $ward_nr ?>">
+                                                            $diagnosis_code = $rowPrescr['ICD_10_code'];
 
+                                                            $diagnosis_descr = $rowPrescr['ICD_10_description'];
 
+                                                            $dnotes = $rowPrescr['comment'];
+//                                                            echo $dnotes;
 
+                                                            $type = $rowPrescr['type'];
 
+                                                            $doctor = $rowPrescr['doctor_name'];
 
+                                                            $prescr .= $diagnosis_code . '</td><td>' . $diagnosis_descr . '</td>'
+                                                                    . '<td>' . $dnotes . '</td><td>' . $type . '</td><td>' . $rowPrescr['diag_date'] . '</td><td>' . $doctor;
 
-                                                    </TBODY>
-                                                    </TABLE>
-                                                    </TD>
-                                                    </TR>
-
-
-
-
+                                                            $prescr .= '</td></tr>';
 
 
-                                                    </TBODY>
-                                                    </TABLE>
+                                                            if (isset($_GET['save'])) {
 
-                                                    <p>
-                                                        <a href="<?php echo $breakfile ?>"><img src="../../gui/img/control/default/en/en_close2.gif" border=0 width="103" height="24" alt="" style="filter:alpha(opacity=70)" onMouseover="hilite(this, 1)" onMouseOut="hilite(this, 0)"></a>
+                                                                $taken = $_GET['taken_' . $nr];
 
-                                                        <input type="image" src="../../gui/img/control/default/en/en_savedisc.gif" value="button"  name="save">
-                                                        <br><br><br>
+                                                                if ($taken == 'on')
+                                                                    $takenSetter = 1;
+                                                                else
+                                                                    $takenSetter = 0;
 
-                                                        <input name="prescr_date" type="text" size="15" maxlength=10 value="<?php {
-                                                        echo $prescr_date;
+
+                                                                $sqlTaken = "UPDATE care_encounter_prescription SET taken='$takenSetter' WHERE nr='$nr'";
+                                                                $db->Execute($sqlTaken);
+                                                            }
+                                                        }
+                                                        if ($prescr == '')
+                                                            $prescr .= '<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>';
+
+                                                        echo $prescr;
                                                     }
-?>"
-                                                               onFocus="this.select();"
-                                                               onBlur="IsValidDate(this, 'dd/MM/yyyy')"
-                                                               onKeyUp="setDate(this, 'dd/MM/yyyy', 'en');">
-                                                        <a href="javascript:show_calendar('nursingform.prescr_date','dd/MM/yyyy')">
-                                                            <img <?php echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle'); ?>></a>
+                                                    ?>
+                                                <input type="hidden" name="station" value="<?php echo $station ?>">
+                                                <input type="hidden" name="ward_nr" value="<?php echo $ward_nr ?>">
 
 
-                                                        <font size=1>[
-<?php
-$dfbuffer = "LD_" . strtr($date_format, ".-/", "phs");
-echo $$dfbuffer;
-?>
-                                                        ] </font><br>
-
-                                                        <input type="submit" name="setTime" value="show">
-
-                                                </form>
-
-                                                <p>
-                                                    </blockquote>
-                                                    </td>
-                                                    </tr>
-
-                                                <tr valign=top >
-                                                    <td bgcolor=#cccccc>
-                                                        <table width="100%" border="0" cellspacing="0" cellpadding="1" bgcolor="#cfcfcf">
-                                                            <tr>
-                                                                <td align="center">
-                                                                    <table width="100%" bgcolor="#ffffff" cellspacing=0 cellpadding=5>
-
-                                                                        <tr>
-                                                                            <td>
-                                                                                <div class="copyright">
-                                                                                    <script language="JavaScript">
-                                                                                        <!-- Script Begin
-                                                                                    function openCreditsWindow() {
-
-                                                                                            urlholder = "../../language/$lang/$lang_credits.php?lang=$lang";
-                                                                                            creditswin = window.open(urlholder, "creditswin", "width=500,height=600,menubar=no,resizable=yes,scrollbars=yes");
-
-                                                                                        }
-                                                                                        //  Script End -->
-                                                                                    </script>
 
 
-                                                                                    <a href="http://www.care2x.org" target=_new>CARE2X 2nd Generation pre-deployment 3.3</a> :: <a href="../../legal_gnu_gpl.htm" target=_new> License</a> ::
-                                                                                    <a href=mailto:info@care2x.org>Contact</a>  :: <a href="../../language/en/en_privacy.htm" target="pp"> Our Privacy Policy </a> ::
-                                                                                    <a href="../../docs/show_legal.php?lang=$lang" target="lgl"> Legal </a> ::
-                                                                                    <a href="javascript:openCreditsWindow()"> Credits </a> ::.<br>
 
-                                                                                </div>
-                                                                            </td>
-                                                                        <tr>
-                                                                    </table>
-                                                                </td>
-                                                            </tr>
-                                                        </table>
-                                                    </td>
 
-                                                </tr>
+                                                </TBODY>
+                                            </TABLE>
+                                        </TD>
+                                    </TR>
 
-                                </tbody>
-                            </table>
-                            </BODY>
-                            </HTML>
+
+
+
+
+
+                                    </TBODY>
+                                </TABLE>
+
+                                <p>
+                                    <a href="<?php echo $breakfile ?>"><img src="../../gui/img/control/default/en/en_close2.gif" border=0 width="103" height="24" alt="" style="filter:alpha(opacity=70)" onMouseover="hilite(this, 1)" onMouseOut="hilite(this, 0)"></a>
+
+                                                        <!--<input type="image" src="../../gui/img/control/default/en/en_savedisc.gif" value="button"  name="save">-->
+                                    <br><br><br>
+
+<!--                                    <input name="prescr_date" type="text" size="15" maxlength=10 value="<?php {
+//                                        echo $prescr_date;
+                                    }
+                                    ?>"
+                                           onFocus="this.select();"
+                                           onBlur="IsValidDate(this, 'dd/MM/yyyy')"
+                                           onKeyUp="setDate(this, 'dd/MM/yyyy', 'en');">
+                                    <a href="javascript:show_calendar('nursingform.prescr_date','dd/MM/yyyy')">
+                                        <img <?php // echo createComIcon($root_path, 'show-calendar.gif', '0', 'absmiddle');  ?>></a>
+
+
+                                    <font size=1>[
+                                    <?php
+//                                    $dfbuffer = "LD_" . strtr($date_format, ".-/", "phs");
+//                                    echo $$dfbuffer;
+                                    ?>
+                                    ] </font><br>
+
+                                    <input type="submit" name="setTime" value="Show">-->
+
+                                <p>
+                            </blockquote>
+                        </td>
+                    </tr>
+            </table>
+        </form>
+        <table width=100% border=0 cellspacing=0 height=100%>
+            <tr valign=top >
+                <td bgcolor=#cccccc>
+                    <table width="100%" border="0" cellspacing="0" cellpadding="1" bgcolor="#cfcfcf">
+                        <tr>
+                            <td align="center">
+                                <table width="100%" bgcolor="#ffffff" cellspacing=0 cellpadding=5>
+
+                                    <tr>
+                                        <td>
+                                            <div class="copyright">
+                                                <script language="JavaScript">
+                                                    <!-- Script Begin
+                                                function openCreditsWindow() {
+
+                                                        urlholder = "../../language/$lang/$lang_credits.php?lang=$lang";
+                                                        creditswin = window.open(urlholder, "creditswin", "width=500,height=600,menubar=no,resizable=yes,scrollbars=yes");
+
+                                                    }
+                                                    //  Script End -->
+                                                </script>
+
+
+                                                <a href="http://www.care2x.org" target=_new>CARE2X 2nd Generation pre-deployment 3.3</a> :: <a href="../../legal_gnu_gpl.htm" target=_new> License</a> ::
+                                                <a href=mailto:info@care2x.org>Contact</a>  :: <a href="../../language/en/en_privacy.htm" target="pp"> Our Privacy Policy </a> ::
+                                                <a href="../../docs/show_legal.php?lang=$lang" target="lgl"> Legal </a> ::
+                                                <a href="javascript:openCreditsWindow()"> Credits </a> ::.<br>
+
+                                            </div>
+                                        </td>
+                                    <tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+
+            </tr>
+
+        </tbody>
+    </table>
+</BODY>
+</HTML>
