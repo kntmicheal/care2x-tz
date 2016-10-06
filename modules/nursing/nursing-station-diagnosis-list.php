@@ -203,7 +203,6 @@ require($root_path . 'include/inc_checkdate_lang.php');
                                                 <TBODY class="submenu">
 
                                                     <tr>
-
                                                         <td class="submenu_item"><?php echo $LDPatientID ?></td>
                                                         <td class="submenu_item"><?php echo $LDLastName . ', ' . $LDName ?></td>
                                                         <td class="submenu_item"><?php echo $LDDiagnosis ?></td>

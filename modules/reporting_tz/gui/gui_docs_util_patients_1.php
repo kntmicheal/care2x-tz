@@ -35,95 +35,74 @@ if ($printout) {
                 </tr>
 
                 <?php
+//                                $data = array();
+//Get the detailed list of patients and assign to $data
+                while ($row_patients_dets = $db_patients_qry->FetchRow()) {
+                    $data['patient_dets'][] = $row_patients_dets;
+                }
+
                 $patient_total = 0;
 
                 //Iterate through patient list and get other details
-//                                    for ($i = 0; $i < count($data['patient_dets']); $i++) {
-                $i = 0;
-                $serial = 0;
-                foreach ($data['encounters'] as $date => $patients) {
+                for ($i = 0; $i < count($data['patient_dets']); $i++) {
                     $patient_total += 1;
-//                                        $encounter_no = $data['patient_dets'][$i]['encounter_nr'];
-                    foreach ($patients as $encounter_no) {
-                        //get all the patient notes
-                        $notes_qry = "SELECT notes FROM  care_encounter_notes "
-                                . " WHERE encounter_nr =$encounter_no "
-                                . " AND personell_name='$doctor'"
-                                . " AND date = '$date'";
-                        $db_notes = $db->Execute($notes_qry);
+                    $encounter_no = $data['patient_dets'][$i]['encounter_nr'];
 
-                        while ($row_notes = $db_notes->FetchRow()) {
-                            $data['notes'][] = $row_notes;
-                        }
-//                                        print_r($data['notes']);
-                        //get all the diagnosis done to patient
-                        $diagnosis_qry = "SELECT ICD_10_code FROM care_tz_diagnosis
-                                                  WHERE encounter_nr = $encounter_no "
-                                . " AND doctor_name ='$doctor' "
-                                . " AND FROM_UNIXTIME(timestamp) like '%$date%'";
-                        $db_diagnosis = $db->Execute($diagnosis_qry);
+                    //get all the patient notes
+                    $notes_qry = "SELECT notes FROM  care_encounter_notes "
+                            . " WHERE encounter_nr = $encounter_no "
+                            . " AND personell_name='$doctor'";
+                    $db_notes = $db->Execute($notes_qry);
 
-                        while ($row_diagnosis = $db_diagnosis->FetchRow()) {
-                            $data['diagnosis'][] = $row_diagnosis;
-                        }
-
-                        //get all the prescriptions done to patient
-                        $prescr_qry = "SELECT article from care_encounter_prescription
-                                                  WHERE encounter_nr = $encounter_no
-                                                  AND drug_class != 'labtest' "
-//                                                    . " AND drug_class != 0 "
-                                . " AND prescriber ='$doctor' "
-                                . " AND prescribe_date = '$date' ";
-                        $db_prescr = $db->Execute($prescr_qry);
-
-                        while ($row_prescr = $db_prescr->FetchRow()) {
-                            $data['prescription'][] = $row_prescr;
-                        }
-
-                        //get all the test requests done to patient
-                        $lab_qry = "SELECT article from care_encounter_prescription
-                                                  WHERE encounter_nr = $encounter_no
-                                                  AND drug_class = 'labtest' "
-                                . " AND prescriber ='$doctor' "
-                                . " AND prescribe_date >= '$date' ";
-                        $db_lab = $db->Execute($lab_qry);
-
-                        while ($row_lab = $db_lab->FetchRow()) {
-                            $data['lab'][] = $row_lab;
-                        }
-
-
-                        //Get the largest of diagnosis, prescriptions and labtest
-                        $rows = max(count($data['diagnosis']), count($data['prescription']), count($data['lab']), count($data['notes']));
-
-//                                        echo count($data['diagnosis']) . ' ' . count($data['prescription']) . 'ee'
-//                                        . ' ' . count($data['lab']) . '  ' . count($data['notes']) . 'end' . $encounter_no . ' <br>';
-                        //Check that $rows is not zero
-                        if ($rows < 1) {
-                            continue;
-                        } else {
-                            //Get patient details
-                            //Get the patient details using the encounter number
-                            $patients_qry = "SELECT care_person.pid, care_person.selian_pid, care_person.name_first, care_person.name_2, care_person.name_last, 
-                                            care_person.sex, care_encounter.encounter_nr, care_encounter.encounter_date
-                                                FROM care_person , care_encounter
-                                                WHERE care_person.pid = care_encounter.pid
-                                                AND care_encounter.encounter_nr = $encounter_no";
-                            $db_patients_qry = $db->Execute($patients_qry);
-
- 
-
-                            while ($row_patients_dets = $db_patients_qry->FetchRow()) {
-                                $data['patient_dets'][$i] = $row_patients_dets;
-                            }
-                        }
+                    while ($row_notes = $db_notes->FetchRow()) {
+                        $data['notes'][] = $row_notes;
                     }
-//                                        $serial = $serial + 1;
+
+                    //get all the diagnosis done to patient
+                    $diagnosis_qry = "SELECT ICD_10_code from care_tz_diagnosis
+                                                  WHERE encounter_nr = '$encounter_no' "
+                            . " AND doctor_name ='$doctor'";
+                    $db_diagnosis = $db->Execute($diagnosis_qry);
+
+                    while ($row_diagnosis = $db_diagnosis->FetchRow()) {
+                        $data['diagnosis'][] = $row_diagnosis;
+                    }
+
+                    //get all the prescriptions done to patient
+                    $prescr_qry = "SELECT article from care_encounter_prescription
+                                                  WHERE encounter_nr = '$encounter_no'
+                                                  AND drug_class != 'labtest' "
+                            . " AND prescriber ='$doctor'";
+                    $db_prescr = $db->Execute($prescr_qry);
+
+                    while ($row_prescr = $db_prescr->FetchRow()) {
+                        $data['prescription'][] = $row_prescr;
+                    }
+
+                    //get all the test requests done to patient
+                    $lab_qry = "SELECT article from care_encounter_prescription
+                                                  WHERE encounter_nr = '$encounter_no'
+                                                  AND drug_class = 'labtest' "
+                            . " AND prescriber ='$doctor'";
+                    $db_lab = $db->Execute($lab_qry);
+
+                    while ($row_lab = $db_lab->FetchRow()) {
+                        $data['lab'][] = $row_lab;
+                    }
+
+                    //Get the largest of diagnosis, prescriptions and labtest
+                    $rows = max(count($data['diagnosis']), count($data['prescription']), count($data['lab']), count($data['notes']));
+
+                    //Check that $rows is not zero
+                    if ($rows < 1) {
+//                                            echo 'ljlkj,hmnlkhkbj';
+                        continue;
+                    }
 
                     for ($r = 0; $r < $rows; $r++) {
                         if ($r == 0) {
                             echo '<tr>';
-                            echo '<td align="center">' . $serial += 1 . '</td>';
+                            echo '<td align="center">' . $serial = $i + 1 . '</td>';
                             echo '<td align="center">' . @formatDate2Local($data['patient_dets'][$i]['encounter_date'], "dd/mm/yyyy") . '</td>';
                             echo '<td>' . $data['patient_dets'][$i]['name_first'] . ' ' .
                             $data['patient_dets'][$i]['name_2'] . ' ' . $data['patient_dets'][$i]['name_last'] . '</td>';
@@ -213,9 +192,7 @@ if ($printout) {
                             echo '</tr>';
                         }
                     }
-                    $i++;
                     //Empty patient's data
-                    unset($data['patient_dets']);
                     unset($data['notes']);
                     unset($data['diagnosis']);
                     unset($data['prescription']);
@@ -317,11 +294,11 @@ if ($printout) {
                         <td  valign="top" align="middle" height="35">
                             <table cellspacing="0"  class="titlebar" border=0>
                                 <tr valign=top  class="titlebar" >
-                                    <td width="302" bgcolor="#99ccff" > &nbsp;&nbsp;<font color="#330066"><?php // echo $LDDocsUtilReport;                                                                                                                                                                                                         ?></font></td>
+                                    <td width="302" bgcolor="#99ccff" > &nbsp;&nbsp;<font color="#330066"><?php // echo $LDDocsUtilReport;                                                                                                                                                                                ?></font></td>
                                     <td width="408" align=right bgcolor="#99ccff">
     <!--                                    <a href="javascript: history.back();"><img src="../../gui/img/control/default/en/en_back2.gif" border=0 width="110" height="24" alt="" style="filter:alpha(opacity=70)" onMouseover="hilite(this, 1)" onMouseOut="hilite(this, 0)" ></a>
                                         <a href="javascript:gethelp('reporting_overview.php','Reporting :: Overview')"><img src="../../gui/img/control/default/en/en_hilfe-r.gif" border=0 width="75" height="24" alt="" style="filter:alpha(opacity=70)" onMouseover="hilite(this, 1)" onMouseOut="hilite(this, 0)"></a>
-                                        <a href="<?php // echo $root_path;                                                                                                                                                                                                         ?>modules/reporting_tz/reporting_main_menu.php" ><img src="../../gui/img/control/default/en/en_close2.gif" border=0 width="103" height="24" alt="" style="filter:alpha(opacity=70)" onMouseover="hilite(this, 1)" onMouseOut="hilite(this, 0)"></a>  -->
+                                        <a href="<?php // echo $root_path;                                                                                                                                                                                ?>modules/reporting_tz/reporting_main_menu.php" ><img src="../../gui/img/control/default/en/en_close2.gif" border=0 width="103" height="24" alt="" style="filter:alpha(opacity=70)" onMouseover="hilite(this, 1)" onMouseOut="hilite(this, 0)"></a>  -->
                                     </td>
                                 </tr>
                             </table>	
@@ -359,94 +336,80 @@ if ($printout) {
 //                            //                                    print_r($data['patient_dets']);
                                     //                                    echo '<br>';
                                     $patient_total = 0;
-
+                                    $serial = 0;
                                     //Iterate through patient list and get other details
 //                                    for ($i = 0; $i < count($data['patient_dets']); $i++) {
-                                    $i = 0;
-                                    $serial = 0;
                                     foreach ($data['encounters'] as $date => $patients) {
                                         $patient_total += 1;
-//                                        $encounter_no = $data['patient_dets'][$i]['encounter_nr'];
-                                        foreach ($patients as $encounter_no) {
-                                            //get all the patient notes
-                                            $notes_qry = "SELECT notes FROM  care_encounter_notes "
-                                                    . " WHERE encounter_nr =$encounter_no "
-                                                    . " AND personell_name='$doctor'"
-                                                    . " AND date = '$date'";
-                                            $db_notes = $db->Execute($notes_qry);
+                                        $encounter_no = $data['patient_dets'][$i]['encounter_nr'];
 
-                                            while ($row_notes = $db_notes->FetchRow()) {
-                                                $data['notes'][] = $row_notes;
-                                            }
+                                        //get all the patient notes
+                                        $notes_qry = "SELECT notes FROM  care_encounter_notes "
+                                                . " WHERE encounter_nr IN(" . implode(',', $patients) . ")"
+                                                . " AND personell_name='$doctor'"
+                                                . " AND date >= '$startdate' AND date <= '$enddate'";
+                                        $db_notes = $db->Execute($notes_qry);
+
+                                        while ($row_notes = $db_notes->FetchRow()) {
+                                            $data['notes'][] = $row_notes;
+                                        }
 //                                        print_r($data['notes']);
-                                            //get all the diagnosis done to patient
-                                            $diagnosis_qry = "SELECT ICD_10_code FROM care_tz_diagnosis
+                                        //get all the diagnosis done to patient
+                                        $diagnosis_qry = "SELECT ICD_10_code FROM care_tz_diagnosis
                                                   WHERE encounter_nr = $encounter_no "
-                                                    . " AND doctor_name ='$doctor' "
-                                                    . " AND FROM_UNIXTIME(timestamp) like '%$date%'";
-                                            $db_diagnosis = $db->Execute($diagnosis_qry);
+                                                . " AND doctor_name ='$doctor' "
+                                                . " AND FROM_UNIXTIME(timestamp) >= '$startdate' "
+                                                . " AND FROM_UNIXTIME(timestamp) <= '$enddate'";
+                                        $db_diagnosis = $db->Execute($diagnosis_qry);
 
-                                            while ($row_diagnosis = $db_diagnosis->FetchRow()) {
-                                                $data['diagnosis'][] = $row_diagnosis;
-                                            }
+                                        while ($row_diagnosis = $db_diagnosis->FetchRow()) {
+                                            $data['diagnosis'][] = $row_diagnosis;
+                                        }
 
-                                            //get all the prescriptions done to patient
-                                            $prescr_qry = "SELECT article from care_encounter_prescription
+                                        //get all the prescriptions done to patient
+                                        $prescr_qry = "SELECT article from care_encounter_prescription
                                                   WHERE encounter_nr = $encounter_no
                                                   AND drug_class != 'labtest' "
-//                                                    . " AND drug_class != 0 "
-                                                    . " AND prescriber ='$doctor' "
-                                                    . " AND prescribe_date = '$date' ";
-                                            $db_prescr = $db->Execute($prescr_qry);
+                                                . " AND drug_class != 0 "
+                                                . " AND prescriber ='$doctor' "
+                                                . " AND prescribe_date >= '$startdate' "
+                                                . " AND prescribe_date <= '$enddate'";
+                                        $db_prescr = $db->Execute($prescr_qry);
 
-                                            while ($row_prescr = $db_prescr->FetchRow()) {
-                                                $data['prescription'][] = $row_prescr;
-                                            }
+                                        while ($row_prescr = $db_prescr->FetchRow()) {
+                                            $data['prescription'][] = $row_prescr;
+                                        }
 
-                                            //get all the test requests done to patient
-                                            $lab_qry = "SELECT article from care_encounter_prescription
+                                        //get all the test requests done to patient
+                                        $lab_qry = "SELECT article from care_encounter_prescription
                                                   WHERE encounter_nr = $encounter_no
                                                   AND drug_class = 'labtest' "
-                                                    . " AND prescriber ='$doctor' "
-                                                    . " AND prescribe_date >= '$date' ";
-                                            $db_lab = $db->Execute($lab_qry);
+                                                . " AND prescriber ='$doctor' "
+                                                . " AND prescribe_date >= '$startdate' "
+                                                . " AND prescribe_date <= '$enddate'";
+                                        $db_lab = $db->Execute($lab_qry);
 
-                                            while ($row_lab = $db_lab->FetchRow()) {
-                                                $data['lab'][] = $row_lab;
-                                            }
+                                        while ($row_lab = $db_lab->FetchRow()) {
+                                            $data['lab'][] = $row_lab;
+                                        }
 
-
-                                            //Get the largest of diagnosis, prescriptions and labtest
-                                            $rows = max(count($data['diagnosis']), count($data['prescription']), count($data['lab']), count($data['notes']));
+                                        //Get the largest of diagnosis, prescriptions and labtest
+                                        $rows = max(count($data['diagnosis']), count($data['prescription']), count($data['lab']), count($data['notes']));
 
 //                                        echo count($data['diagnosis']) . ' ' . count($data['prescription']) . 'ee'
 //                                        . ' ' . count($data['lab']) . '  ' . count($data['notes']) . 'end' . $encounter_no . ' <br>';
-                                            //Check that $rows is not zero
-                                            if ($rows < 1) {
-                                                continue;
-                                            } else {
-                                                //Get patient details
-                                                //Get the patient details using the encounter number
-                                                $patients_qry = "SELECT care_person.pid, care_person.selian_pid, care_person.name_first, care_person.name_2, care_person.name_last, 
-                                            care_person.sex, care_encounter.encounter_nr, care_encounter.encounter_date
-                                                FROM care_person , care_encounter
-                                                WHERE care_person.pid = care_encounter.pid
-                                                AND care_encounter.encounter_nr = $encounter_no";
-                                                $db_patients_qry = $db->Execute($patients_qry);
-
-                     
-
-                                                while ($row_patients_dets = $db_patients_qry->FetchRow()) {
-                                                    $data['patient_dets'][$i] = $row_patients_dets;
-                                                }
-                                            }
+                                        //Check that $rows is not zero
+                                        if ($rows < 1) {
+//                                            echo 'ljlkj,hmnlkhkbj';
+                                            continue;
+                                        } else {
+                                            $serial = $serial + 1;
                                         }
-//                                        $serial = $serial + 1;
 
                                         for ($r = 0; $r < $rows; $r++) {
                                             if ($r == 0) {
                                                 echo '<tr>';
-                                                echo '<td align="center">' . $serial += 1 . '</td>';
+                                                echo '<td align="center">' . $serial . '</td>';
                                                 echo '<td align="center">' . @formatDate2Local($data['patient_dets'][$i]['encounter_date'], "dd/mm/yyyy") . '</td>';
                                                 echo '<td>' . $data['patient_dets'][$i]['name_first'] . ' ' .
                                                 $data['patient_dets'][$i]['name_2'] . ' ' . $data['patient_dets'][$i]['name_last'] . '</td>';
@@ -536,9 +499,7 @@ if ($printout) {
                                                 echo '</tr>';
                                             }
                                         }
-                                        $i++;
                                         //Empty patient's data
-                                        unset($data['patient_dets']);
                                         unset($data['notes']);
                                         unset($data['diagnosis']);
                                         unset($data['prescription']);

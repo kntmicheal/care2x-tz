@@ -16,54 +16,31 @@ if ($printout) {
     <table border="1" cellspacing="0" cellpadding="0" align="center" bgcolor=#ffffdd>
         <tr> 
             <?php
-            echo '<td><b>' . 'Serial No:' . '</td>';
-            echo '<td><b>' . $LDDoctor . '</td>';
-            echo '<td><b>' . $LDTotalPatients . '</td>';
-            echo '<td><b>' . $LDAmountperPatient . '</td>';
-            echo '<td><b>' . $LDTotalAmount . '</td>';
-      ?>
-        </tr>
-
-        <?php
-        $data = array();
-        while ($row = $db_docs_patients->FetchRow()) {
-            $data['docs_list'][] = $row;
-        }
-        $count1 = count($data['docs_list']);
-        $patient_total = 0;
-        $amount_total = 0;
-        //print_r($data['docs_list']);
-        for ($i = 0; $i < $count1; $i++) {
-            $patient_total = $patient_total + $data['docs_list'][$i]['no_of_patients'];
-//                                    $amount_doc_total = 1;
-            $amount_doc_total = number_format($amount_per_person * $data['docs_list'][$i]['no_of_patients'], 2);
+            echo '<td align="center"><b>' . 'Serial No:' . '</td>';
+            echo '<td align="center"><b>' . 'Date:' . '</td>';
+            echo '<td align="center"><b>' . $LDDoctor . '</td>';
+            echo '<td align="center"><b>' . $LDTotalPatients . '</td>';
+            echo '<td align="center"><b>' . 'Department' . '</td>';
+            echo '<td align="center"><b>' . $LDAmountperPatient . '</td>';
+            echo '<td align="center"><b>' . $LDTotalAmount . '</td>';
             ?>
-            <tr>
-                <?php
-                //echo '<td>' . @formatDate2Local($data['docs_list'][$i]['date'], "dd/mm/yyyy") . '</td>';
-                echo '<td align="center">' . $serial = $i + 1 . '</td>';
-                echo '<td>' . $data['docs_list'][$i]['name'] . '</td>';
-                echo '<td align="center">' . $data['docs_list'][$i]['no_of_patients'] . '</td>';
-                echo '<td align="center">' . number_format($_GET['amount_per_person'], 2) . '</td>';
-                echo '<td align="center">' . $amount_doc_total . '</td>';
-//                echo '<td></td>';
-                ?>
-            </tr>
-            <?php
-        }
+        </tr>
+        <?php
+        echo $tabler;
         ?>
-
         <tr> 
-            <td bgcolor="#ffffaa"><b><?php echo $LDtotal; ?></td>
+            <td bgcolor="#ffffaa" colspan="3"><b><?php echo'Grand ' . $LDtotal; ?></td>
             <?php
+//            echo '<td></td>';
+//            echo '<td></td>';
+            echo '<td align="center"><b>' . $gtotal . '</b></td>';
+
             echo '<td></td>';
 
-            echo '<td align="center">' . $patient_total . '</td>';
+            echo '<td align="center"><b>' . number_format($gtotal * $amount_per_person, 2) . '</b></td>';
+
 
             echo '<td></td>';
-
-            echo '<td align="center">' . number_format($patient_total * $amount_per_person, 2) . '</td>';
-
             ?>
 
 
@@ -181,59 +158,32 @@ if ($printout) {
                             <table border="1" cellspacing="0" cellpadding="2" align="center" bgcolor=#ffffdd>
                                 <tr> 
                                     <?php
-                                    echo '<td><b>' . 'Serial No:' . '</td>';
-                                    echo '<td><b>' . $LDDoctor . '</td>';
-                                    echo '<td><b>' . $LDTotalPatients . '</td>';
-                                    echo '<td><b>' . $LDAmountperPatient . '</td>';
-                                    echo '<td><b>' . $LDTotalAmount . '</td>';
-                                    echo '<td><b>' . $LDOptionsTittle . '</td>';
+                                    echo '<td align="center"><b>' . 'Serial No:' . '</td>';
+                                    echo '<td align="center"><b>' . 'Date:' . '</td>';
+                                    echo '<td align="center"><b>' . $LDDoctor . '</td>';
+                                    echo '<td align="center"><b>' . $LDTotalPatients . '</td>';
+                                    echo '<td align="center"><b>' . 'Department' . '</td>';
+                                    echo '<td align="center"><b>' . $LDAmountperPatient . '</td>';
+                                    echo '<td align="center"><b>' . $LDTotalAmount . '</td>';
+                                    echo '<td align="center"><b>' . $LDOptionsTittle . '</td>';
                                     ?>
                                 </tr>
-
                                 <?php
-                                $data = array();
-                                while ($row = $db_docs_patients->FetchRow()) {
-                                    $data['docs_list'][] = $row;
-                                }
-                                $count1 = count($data['docs_list']);
-                                $patient_total = 0;
-                                $amount_total = 0;
-                                //print_r($data['docs_list']);
-                                for ($i = 0; $i < $count1; $i++) {
-                                    $patient_total = $patient_total + $data['docs_list'][$i]['no_of_patients'];
-//                                    $amount_doc_total = 1;
-                                    $amount_doc_total = number_format($amount_per_person * $data['docs_list'][$i]['no_of_patients'], 2);
-                                    ?>
-                                    <tr>
-                                        <?php
-                                        //echo '<td>' . @formatDate2Local($data['docs_list'][$i]['date'], "dd/mm/yyyy") . '</td>';
-                                        echo '<td align="center">' . $serial = $i + 1 . '</td>';
-                                        echo '<td>' . $data['docs_list'][$i]['name'] . '</td>';
-                                        echo '<td align="center">' . $data['docs_list'][$i]['no_of_patients'] . '</td>';
-                                        echo '<td align="center">' . number_format($amount_per_person, 2) . '</td>';
-                                        echo '<td align="center">' . $amount_doc_total . '</td>';
-                                        $doctor = $data['docs_list'][$i]['doctor'];
-                                        echo "<td><a href=\"javascript:patientsList('$doctor');\">Open List</a></td>";
-                                        ?>
-                                    </tr>
-                                    <?php
-                                }
+                                echo $tabler;
                                 ?>
-
                                 <tr> 
-                                    <td bgcolor="#ffffaa"><b><?php echo $LDtotal; ?></td>
+                                    <td bgcolor="#ffffaa" colspan="3"><b><?php echo'Grand ' . $LDtotal; ?></td>
                                     <?php
-                                    echo '<td></td>';
-
-                                    echo '<td align="center">' . $patient_total . '</td>';
-
-                                    echo '<td></td>';
-
-                                    echo '<td align="center">' . number_format($patient_total * $cons_charge, 2) . '</td>';
-
+//                                    echo '<td></td>';
+//                                    echo '<td></td>';
+                                    echo '<td align="center"><b>' . $gtotal . '</b></td>';
 
                                     echo '<td></td>';
 
+                                    echo '<td align="center"><b>' . number_format($gtotal * $amount_per_person, 2) . '</b></td>';
+
+
+                                    echo '<td></td>';
                                     ?>
 
 
@@ -255,14 +205,14 @@ if ($printout) {
                                             <td>
                                                 <div class="copyright">
                                                     <script language="JavaScript">
-            <!-- Script Begin
+                                                        <!-- Script Begin
                                                     function openCreditsWindow() {
 
-                urlholder = "../../language/$lang/$lang_credits.php?lang=$lang";
-                creditswin = window.open(urlholder, "creditswin", "width=500,height=600,menubar=no,resizable=yes,scrollbars=yes");
+                                                            urlholder = "../../language/$lang/$lang_credits.php?lang=$lang";
+                                                            creditswin = window.open(urlholder, "creditswin", "width=500,height=600,menubar=no,resizable=yes,scrollbars=yes");
 
-            }
-            //  Script End -->
+                                                        }
+                                                        //  Script End -->
                                                     </script>
 
 

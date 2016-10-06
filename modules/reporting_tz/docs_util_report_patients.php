@@ -44,17 +44,19 @@ $doc_name_res = $db->Execute($doc_name_qry)->FetchRow();
 $doc_name = $doc_name_res[0];
 
 
-//Get the patients attended by doctor
+//Get the patients attended by doctor, check that patient in consultation, diagnosis, prescriptions etc
 
-$doc_patients_list = "SELECT DISTINCT date, patients 
-                  FROM care_tz_hospital_doctor_history
-                  WHERE care_tz_hospital_doctor_history.doctor = '$doctor'
+$doc_patients_list = "SELECT name, doctor, date, cd.name_formal, patients 
+            FROM care_tz_hospital_doctor_history dh, care_users cu, care_department cd 
+                WHERE dh.doctor = cu.login_id AND dh.dept=cd.nr 
+                  AND dh.doctor = '$doctor'
                   AND date >= '$startdate' AND date <= '$enddate' 
                   ORDER BY date asc";
 $db_doc_patients_list = $db->Execute($doc_patients_list);
 
 
 $data = array();
+
 while ($row_patients_list = $db_doc_patients_list->FetchRow()) {
     //Get the list of patients separated by | into array, extract and assign to $data
     $arr_patients = explode('|', $row_patients_list['patients']);
@@ -62,21 +64,43 @@ while ($row_patients_list = $db_doc_patients_list->FetchRow()) {
     $date = $row_patients_list['date'];
 
     foreach ($arr_patients as $key => $value) {
-        $data['patients_list'][] = $value;
-        //$data['date'][] = $date;
+        $data['patients_list'][$doctor][$date][] = $value;
+        $data['date'][] = $date;
+        $data['all'][] = $value;
     }
-    //print_r($data['patients_list']);
+//    print_r($data['patients_list']);
 }
 
-//Get the patient details using the encounter number
-$patients_qry = "SELECT care_person.pid, care_person.selian_pid, care_person.name_first, care_person.name_2, care_person.name_last, 
-                 care_person.sex, care_encounter.encounter_nr, care_encounter.encounter_date, care_encounter_notes.notes
-                 FROM care_person , care_encounter LEFT OUTER JOIN care_encounter_notes
-                 ON care_encounter.encounter_nr = care_encounter_notes.encounter_nr
-                 WHERE care_person.pid = care_encounter.pid
-                 AND care_encounter.encounter_nr IN(" . implode(',', $data['patients_list']) . ")
-                 ORDER BY care_encounter.encounter_nr asc";
-$db_patients_qry = $db->Execute($patients_qry);
+
+//Check patients with consultation etc per doctor on a given date
+//
+foreach ($data['patients_list'] as $doc => $list) {
+
+//        print_r($data['patients_list']);
+
+    foreach ($list as $date => $patients) {
+        //Iterate through each encounter and get patient details if count is not zero
+//        $count = array();
+        //add data to array encounters for a given date
+        foreach ($patients as $encounter) {
+//            print $date . ' - ' . $encounter . 'III';
+            $data['encounters'][$date][] = $encounter;
+        }
+    }
+}
+//
+//print_r($data['encounters']);
+//
+//
+////$data['patients_list'] = array_unique($data['patients_list']);
+////Get the patient details using the encounter number
+//$patients_qry = "SELECT care_person.pid, care_person.selian_pid, care_person.name_first, care_person.name_2, care_person.name_last, 
+//                 care_person.sex, care_encounter.encounter_nr, care_encounter.encounter_date
+//                 FROM care_person , care_encounter
+//                 WHERE care_person.pid = care_encounter.pid
+//                 AND care_encounter.encounter_nr IN(" . implode(',', $data['all']) . ") 
+//                 ORDER BY care_encounter.pid asc";
+//$db_patients_qry = $db->Execute($patients_qry);
 
 
 
